@@ -1,0 +1,257 @@
+# 模块组织规范
+
+## 模块化架构原则
+
+### 1. 功能模块独立性
+每个功能模块应该是独立的，包含：
+- 组件 (components/)
+- 钩子 (hooks/)
+- 状态管理 (stores/)
+- 工具函数 (utils/)
+- 类型定义 (types.ts)
+
+### 2. 模块结构示例
+
+#### 日历模块 (features/calendar/)
+```
+features/calendar/
+├── components/             # 模块专用组件
+│   ├── CalendarGrid.tsx   # 日历网格
+│   ├── CalendarHeader.tsx # 日历头部
+│   ├── CalendarDay.tsx    # 日历日期单元格
+│   └── index.ts          # 组件导出
+├── hooks/                  # 模块专用钩子
+│   ├── useCalendar.ts     # 日历状态钩子
+│   ├── useCalendarNavigation.ts # 导航钩子
+│   └── index.ts          # 钩子导出
+├── stores/                 # 模块状态管理
+│   ├── calendar-store.ts  # 日历状态
+│   └── index.ts          # 状态导出
+├── utils/                  # 模块工具函数
+│   ├── calendar-utils.ts  # 日历工具
+│   ├── navigation-utils.ts # 导航工具
+│   └── index.ts          # 工具导出
+├── types.ts               # 模块类型定义
+└── index.ts              # 模块主导出
+```
+
+#### 事件管理模块 (features/events/)
+```
+features/events/
+├── components/
+│   ├── EventForm.tsx      # 事件表单
+│   ├── EventList.tsx      # 事件列表
+│   ├── EventCard.tsx      # 事件卡片
+│   └── index.ts
+├── hooks/
+│   ├── useEvents.ts       # 事件管理钩子
+│   ├── useEventForm.ts    # 表单钩子
+│   └── index.ts
+├── stores/
+│   ├── events-store.ts    # 事件状态
+│   └── index.ts
+├── utils/
+│   ├── event-utils.ts     # 事件工具
+│   ├── validation.ts      # 验证工具
+│   └── index.ts
+├── types.ts               # 事件类型定义
+└── index.ts              # 模块主导出
+```
+
+## 模块导出规范
+
+### 1. 统一导出模式
+```typescript
+// features/calendar/index.ts
+export { CalendarGrid } from './components/CalendarGrid';
+export { CalendarHeader } from './components/CalendarHeader';
+export { CalendarDay } from './components/CalendarDay';
+
+export { useCalendar } from './hooks/useCalendar';
+export { useCalendarNavigation } from './hooks/useCalendarNavigation';
+
+export { calendarStore } from './stores/calendar-store';
+
+export { formatCalendarDate } from './utils/calendar-utils';
+export { navigateCalendar } from './utils/navigation-utils';
+
+export type { CalendarProps, CalendarState } from './types';
+```
+
+### 2. 组件导出规范
+```typescript
+// features/calendar/components/index.ts
+export { default as CalendarGrid } from './CalendarGrid';
+export { default as CalendarHeader } from './CalendarHeader';
+export { default as CalendarDay } from './CalendarDay';
+```
+
+### 3. Hook导出规范
+```typescript
+// features/calendar/hooks/index.ts
+export { useCalendar } from './useCalendar';
+export { useCalendarNavigation } from './useCalendarNavigation';
+```
+
+## 模块间依赖管理
+
+### 1. 依赖层次结构
+```
+utils/           # 基础工具 (无依赖)
+types/           # 类型定义 (依赖utils)
+stores/          # 状态管理 (依赖types, utils)
+hooks/           # 业务钩子 (依赖stores, types, utils)
+components/      # UI组件 (依赖hooks, types, utils)
+features/        # 功能模块 (依赖components, hooks, stores)
+pages/           # 页面组件 (依赖features)
+```
+
+### 2. 避免循环依赖
+```typescript
+// ❌ 错误：循环依赖
+// features/calendar/hooks/useCalendar.ts
+import { calendarStore } from '../stores/calendar-store';
+
+// features/calendar/stores/calendar-store.ts
+import { useCalendar } from '../hooks/useCalendar';
+
+// ✅ 正确：单向依赖
+// features/calendar/hooks/useCalendar.ts
+import { calendarStore } from '../stores/calendar-store';
+
+// features/calendar/stores/calendar-store.ts
+// 不依赖hooks，只依赖types和utils
+```
+
+## 共享模块规范
+
+### 1. 通用组件 (components/common/)
+```
+components/common/
+├── Button/
+│   ├── Button.tsx
+│   ├── Button.test.tsx
+│   └── index.ts
+├── Modal/
+│   ├── Modal.tsx
+│   ├── Modal.test.tsx
+│   └── index.ts
+└── index.ts
+```
+
+### 2. 通用工具 (utils/)
+```
+utils/
+├── date-utils.ts      # 日期工具
+├── lunar-utils.ts     # 农历工具
+├── validation.ts      # 验证工具
+├── storage.ts         # 存储工具
+└── index.ts
+```
+
+### 3. 通用类型 (types/)
+```
+types/
+├── calendar.ts        # 日历相关类型
+├── events.ts          # 事件相关类型
+├── settings.ts        # 设置相关类型
+├── api.ts            # API相关类型
+└── index.ts
+```
+
+## 模块测试规范
+
+### 1. 测试文件组织
+```
+features/calendar/
+├── components/
+│   ├── CalendarGrid.tsx
+│   ├── CalendarGrid.test.tsx
+│   └── index.ts
+├── hooks/
+│   ├── useCalendar.ts
+│   ├── useCalendar.test.ts
+│   └── index.ts
+└── utils/
+    ├── calendar-utils.ts
+    ├── calendar-utils.test.ts
+    └── index.ts
+```
+
+### 2. 测试命名规范
+- 组件测试: `ComponentName.test.tsx`
+- Hook测试: `hookName.test.ts`
+- 工具测试: `utilsName.test.ts`
+
+## 模块文档规范
+
+### 1. README文件
+每个功能模块应包含README.md：
+```markdown
+# Calendar Module
+
+## 功能描述
+日历显示和导航功能
+
+## 组件
+- CalendarGrid: 日历网格组件
+- CalendarHeader: 日历头部组件
+- CalendarDay: 日历日期单元格
+
+## Hooks
+- useCalendar: 日历状态管理
+- useCalendarNavigation: 日历导航
+
+## 使用方法
+```typescript
+import { CalendarGrid, useCalendar } from '@/features/calendar';
+```
+
+## API文档
+详细API文档...
+```
+
+### 2. 类型文档
+```typescript
+/**
+ * 日历组件属性
+ */
+export interface CalendarProps {
+  /** 当前选中的日期 */
+  selectedDate: Date;
+  /** 日期选择回调 */
+  onDateSelect: (date: Date) => void;
+  /** 是否显示农历 */
+  showLunar?: boolean;
+  /** 事件列表 */
+  events?: Event[];
+}
+```
+
+## 性能优化规范
+
+### 1. 懒加载模块
+```typescript
+// 懒加载大型功能模块
+const SettingsPage = React.lazy(() => import('@/pages/SettingsPage'));
+const EventForm = React.lazy(() => import('@/features/events/components/EventForm'));
+```
+
+### 2. 模块分割
+```typescript
+// 按功能分割代码
+const CalendarModule = React.lazy(() => import('@/features/calendar'));
+const EventsModule = React.lazy(() => import('@/features/events'));
+```
+
+### 3. 状态隔离
+```typescript
+// 每个模块管理自己的状态
+const calendarStore = createStore<CalendarState>({
+  // 日历相关状态
+});
+
+const eventsStore = createStore<EventsState>({
+  // 事件相关状态
+});
+```

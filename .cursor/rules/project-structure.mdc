@@ -1,0 +1,148 @@
+# 万年历应用项目结构规范
+
+## 项目概述
+这是一个基于 Electron + React + TypeScript 的万年历桌面应用，支持农历、节日、个人事件等功能。
+
+## 技术栈
+- **主框架**: Electron
+- **前端**: React 19 + TypeScript
+- **构建工具**: electron-vite
+- **UI组件**: Ant Design
+- **日期处理**: dayjs + lunar-javascript
+- **数据存储**: electron-store
+- **网络请求**: axios
+
+## 项目结构规范
+
+### 进程分层
+- [src/main](mdc:src/main): Electron主进程，负责系统级功能
+- [src/preload](mdc:src/preload): 预加载脚本，安全地暴露API
+- [src/renderer](mdc:src/renderer): 渲染进程，实现用户界面
+
+### 主进程结构 (src/main/)
+```
+src/main/
+├── index.ts                 # 主进程入口
+├── core/                    # 核心功能模块
+│   ├── window.ts           # 窗口管理
+│   ├── tray.ts             # 系统托盘
+│   └── ipc/                # IPC通信处理
+├── features/                # 业务功能模块
+│   ├── storage/            # 数据存储
+│   ├── events/             # 事件管理
+│   ├── holidays/           # 假期数据
+│   └── updates/            # 自动更新
+├── services/                # 后台服务
+│   ├── lunar-service.ts    # 农历计算服务
+│   └── notification.ts     # 通知服务
+└── utils/                   # 工具函数
+    ├── date-utils.ts       # 日期工具
+    └── validation.ts       # 验证工具
+```
+
+### 预加载脚本结构 (src/preload/)
+```
+src/preload/
+├── index.ts                # 预加载脚本入口
+├── api/                    # 按模块组织的API接口
+│   ├── events.ts          # 事件相关API
+│   ├── settings.ts        # 设置相关API
+│   ├── lunar.ts           # 农历相关API
+│   └── holidays.ts        # 假期相关API
+└── utils/                  # 工具函数
+    ├── ipc-utils.ts       # IPC工具
+    └── validation.ts      # 验证工具
+```
+
+### 渲染进程结构 (src/renderer/)
+```
+src/renderer/
+├── index.html              # 主HTML文件
+└── src/
+    ├── main.tsx           # 应用入口
+    ├── App.tsx            # 主应用组件
+    ├── components/         # 通用组件
+    │   ├── Calendar/      # 日历组件
+    │   ├── EventForm/     # 事件表单
+    │   └── common/        # 通用组件
+    ├── features/           # 功能模块
+    │   ├── calendar/      # 日历功能
+    │   ├── events/        # 事件管理
+    │   ├── settings/      # 设置功能
+    │   └── holidays/      # 假期功能
+    ├── layouts/            # 布局组件
+    │   ├── MainLayout.tsx
+    │   └── PopupLayout.tsx
+    ├── pages/              # 页面组件
+    │   ├── CalendarPage.tsx
+    │   ├── SettingsPage.tsx
+    │   └── EventPage.tsx
+    ├── stores/             # 状态管理
+    │   ├── calendar-store.ts
+    │   ├── events-store.ts
+    │   └── settings-store.ts
+    ├── hooks/              # 自定义Hooks
+    │   ├── useLunarDate.ts
+    │   ├── useEvents.ts
+    │   └── useSettings.ts
+    ├── utils/              # 工具函数
+    │   ├── date-utils.ts
+    │   ├── lunar-utils.ts
+    │   └── validation.ts
+    ├── types/              # TypeScript类型定义
+    │   ├── calendar.ts
+    │   ├── events.ts
+    │   └── settings.ts
+    └── assets/             # 静态资源
+        ├── icons/
+        └── styles/
+```
+
+### 功能模块组织规范
+
+每个功能模块应包含：
+```
+features/calendar/
+├── components/             # 模块专用组件
+│   ├── CalendarGrid.tsx
+│   ├── CalendarHeader.tsx
+│   └── CalendarDay.tsx
+├── hooks/                  # 模块专用钩子
+│   ├── useCalendar.ts
+│   └── useCalendarNavigation.ts
+├── stores/                 # 模块状态管理
+│   └── calendar-store.ts
+├── utils/                  # 模块工具函数
+│   ├── calendar-utils.ts
+│   └── navigation-utils.ts
+└── types.ts               # 模块类型定义
+```
+
+### 配置文件
+- [package.json](mdc:package.json) - 项目依赖和脚本
+- [electron.vite.config.ts](mdc:electron.vite.config.ts) - 构建配置
+- [tsconfig.json](mdc:tsconfig.json) - TypeScript配置
+- [eslint.config.mjs](mdc:eslint.config.mjs) - ESLint配置
+- [electron-builder.yml](mdc:electron-builder.yml) - 打包配置
+
+## 命名规范
+
+### 文件命名规范
+- **组件文件/目录**: 使用 PascalCase，如 `Calendar.tsx`, `EventForm/`
+- **工具/配置文件**: 使用 camelCase，如 `dateUtils.ts`, `lunarUtils.ts`
+- **样式文件**: 使用 camelCase，如 `calendarStyles.css`
+- **类型文件**: 使用 camelCase + .ts，如 `calendarTypes.ts`
+- **常量文件**: 使用 UPPER_SNAKE_CASE，如 `CONSTANTS.ts`
+
+### 目录命名规范
+- **功能模块**: 使用 camelCase，如 `calendar/`, `eventManagement/`
+- **组件目录**: 使用 PascalCase，如 `Calendar/`, `EventForm/`
+- **工具目录**: 使用 camelCase，如 `utils/`, `hooks/`
+
+## 开发指导
+1. 系统托盘和窗口管理
+2. 日历核心功能（农历、节日）
+3. 事件管理功能
+4. 数据存储和同步
+5. UI/UX 优化
+6. 系统集成（自启动、更新）

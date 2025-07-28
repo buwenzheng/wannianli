@@ -1,0 +1,167 @@
+# 万年历应用开发规范
+
+## 项目概述
+这是一个基于 Electron + React + TypeScript 的万年历桌面应用，支持农历、节日、个人事件等功能。
+
+## 技术栈
+- **主框架**: Electron
+- **前端**: React 19 + TypeScript
+- **构建工具**: electron-vite
+- **UI组件**: Ant Design
+- **日期处理**: dayjs + lunar-javascript
+- **数据存储**: electron-store
+- **网络请求**: axios
+
+## 代码规范
+
+### 1. 文件命名规范
+- **组件文件**: 使用 PascalCase，如 `Calendar.tsx`, `EventForm.tsx`
+- **工具文件**: 使用 camelCase，如 `dateUtils.ts`, `lunarUtils.ts`
+- **类型文件**: 使用 PascalCase + .d.ts，如 `types.d.ts`
+- **常量文件**: 使用 UPPER_SNAKE_CASE，如 `CONSTANTS.ts`
+
+### 2. 目录结构规范
+```
+src/
+├── main/                 # 主进程代码
+│   ├── index.ts         # 主进程入口
+│   ├── tray.ts          # 系统托盘
+│   ├── window.ts        # 窗口管理
+│   └── ipc/             # IPC通信
+├── renderer/            # 渲染进程代码
+│   ├── src/
+│   │   ├── components/  # React组件
+│   │   ├── hooks/       # 自定义Hooks
+│   │   ├── utils/       # 工具函数
+│   │   ├── types/       # TypeScript类型
+│   │   ├── stores/      # 状态管理
+│   │   └── assets/      # 静态资源
+│   └── index.html
+└── preload/             # 预加载脚本
+```
+
+### 3. TypeScript规范
+- 严格使用 TypeScript，避免 any 类型
+- 为所有函数参数和返回值定义类型
+- 使用 interface 定义对象类型，使用 type 定义联合类型
+- 导出类型时使用 export type
+
+### 4. React组件规范
+- 使用函数组件和 Hooks
+- 组件名使用 PascalCase
+- Props 接口以组件名 + Props 命名
+- 使用 React.memo 优化性能
+- 自定义 Hooks 以 use 开头
+
+### 5. 状态管理规范
+- 使用 React Context + useReducer 进行全局状态管理
+- 本地状态使用 useState
+- 复杂状态逻辑封装为自定义 Hooks
+
+### 6. 样式规范
+- 使用 Tailwind CSS 进行样式开发
+- 组件样式使用 className 属性
+- 避免内联样式
+- 响应式设计优先
+
+### 7. 错误处理规范
+- 使用 try-catch 包装异步操作
+- 定义统一的错误类型
+- 提供用户友好的错误提示
+- 记录错误日志
+
+### 8. 性能优化规范
+- 使用 React.memo 避免不必要的重渲染
+- 使用 useMemo 和 useCallback 优化性能
+- 懒加载大型组件
+- 合理使用 React.lazy
+
+## 开发指导
+
+### 1. 功能开发顺序
+1. 系统托盘和窗口管理
+2. 日历核心功能（农历、节日）
+3. 事件管理功能
+4. 数据存储和同步
+5. UI/UX 优化
+6. 系统集成（自启动、更新）
+
+### 2. 代码质量要求
+- 所有代码必须通过 ESLint 检查
+- 使用 Prettier 格式化代码
+- 编写单元测试覆盖核心功能
+- 添加适当的注释和文档
+
+### 3. 提交规范
+- 使用语义化提交信息
+- 每次提交只包含一个功能或修复
+- 提交前运行 lint 和测试
+
+### 4. 安全考虑
+- 验证所有用户输入
+- 安全处理 IPC 通信
+- 保护用户隐私数据
+- 遵循最小权限原则
+
+## 特殊要求
+
+### 1. 农历功能
+- 使用 lunar-javascript 进行农历计算
+- 支持农历节日和节气显示
+- 处理农历日期转换的边界情况
+
+### 2. 事件管理
+- 支持公历和农历事件
+- 支持重复事件（年重复、月重复等）
+- 提供事件提醒功能
+
+### 3. 数据同步
+- 支持在线更新假期数据
+- 本地缓存机制
+- 数据备份和恢复
+
+### 4. 用户体验
+- 支持键盘快捷键
+- 响应式设计
+- 无障碍访问支持
+- 深色模式支持
+
+## 代码示例
+
+### 组件示例
+```typescript
+interface CalendarProps {
+  date: Date;
+  onDateSelect: (date: Date) => void;
+}
+
+const Calendar: React.FC<CalendarProps> = ({ date, onDateSelect }) => {
+  // 组件实现
+};
+```
+
+### Hook示例
+```typescript
+const useLunarDate = (date: Date) => {
+  // Hook实现
+  return { lunarDate, festivals };
+};
+```
+
+### 类型定义示例
+```typescript
+export interface Event {
+  id: string;
+  title: string;
+  date: Date;
+  lunarDate?: string;
+  repeatType: 'none' | 'yearly' | 'monthly';
+  category: string;
+}
+```
+
+## 注意事项
+- 保持代码简洁和可读性
+- 优先考虑用户体验
+- 注意跨平台兼容性
+- 定期重构和优化代码 

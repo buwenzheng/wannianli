@@ -1,0 +1,298 @@
+# React组件开发规范
+
+## 组件编写规范
+
+### 1. 函数组件和Hooks
+- 使用函数组件而不是类组件
+- 使用Hooks进行状态管理和副作用
+- 组件名使用PascalCase
+- Props接口以组件名 + Props命名
+
+### 2. 组件结构示例
+```typescript
+interface CalendarProps {
+  date: Date;
+  onDateSelect: (date: Date) => void;
+  events?: Event[];
+  showLunar?: boolean;
+}
+
+const Calendar: React.FC<CalendarProps> = ({ 
+  date, 
+  onDateSelect, 
+  events = [], 
+  showLunar = true 
+}) => {
+  // 状态定义
+  const [selectedDate, setSelectedDate] = useState<Date>(date);
+  
+  // 副作用
+  useEffect(() => {
+    setSelectedDate(date);
+  }, [date]);
+  
+  // 事件处理
+  const handleDateClick = useCallback((clickedDate: Date) => {
+    setSelectedDate(clickedDate);
+    onDateSelect(clickedDate);
+  }, [onDateSelect]);
+  
+  // 渲染
+  return (
+    <div className="calendar">
+      {/* 组件内容 */}
+    </div>
+  );
+};
+
+export default React.memo(Calendar);
+```
+
+### 3. 自定义Hooks规范
+```typescript
+// Hook命名以use开头
+const useLunarDate = (date: Date) => {
+  const [lunarData, setLunarData] = useState<LunarData | null>(null);
+  
+  useEffect(() => {
+    const calculateLunar = () => {
+      // 农历计算逻辑
+    };
+    
+    calculateLunar();
+  }, [date]);
+  
+  return lunarData;
+};
+
+// 复杂状态Hook
+const useEventManager = () => {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(false);
+  
+  const addEvent = useCallback((event: Event) => {
+    setEvents(prev => [...prev, event]);
+  }, []);
+  
+  const removeEvent = useCallback((id: string) => {
+    setEvents(prev => prev.filter(event => event.id !== id));
+  }, []);
+  
+  return {
+    events,
+    loading,
+    addEvent,
+    removeEvent
+  };
+};
+```
+
+## 性能优化规范
+
+### 1. React.memo使用
+```typescript
+// 对于纯展示组件使用React.memo
+const CalendarDay: React.FC<CalendarDayProps> = React.memo(({ 
+  date, 
+  isSelected, 
+  hasEvent, 
+  onClick 
+}) => {
+  return (
+    <div 
+      className={`calendar-day ${isSelected ? 'selected' : ''} ${hasEvent ? 'has-event' : ''}`}
+      onClick={() => onClick(date)}
+    >
+      {date.getDate()}
+    </div>
+  );
+});
+```
+
+### 2. useMemo和useCallback优化
+```typescript
+const Calendar: React.FC<CalendarProps> = ({ date, events }) => {
+  // 使用useMemo缓存计算结果
+  const calendarDays = useMemo(() => {
+    return generateCalendarDays(date);
+  }, [date]);
+  
+  // 使用useCallback缓存函数
+  const handleDateClick = useCallback((clickedDate: Date) => {
+    // 处理日期点击
+  }, []);
+  
+  // 使用useMemo缓存过滤结果
+  const filteredEvents = useMemo(() => {
+    return events.filter(event => isSameDay(event.date, date));
+  }, [events, date]);
+  
+  return (
+    <div className="calendar">
+      {calendarDays.map(day => (
+        <CalendarDay
+          key={day.toISOString()}
+          date={day}
+          onClick={handleDateClick}
+          hasEvent={filteredEvents.some(event => isSameDay(event.date, day))}
+        />
+      ))}
+    </div>
+  );
+};
+```
+
+### 3. 懒加载组件
+```typescript
+// 懒加载大型组件
+const EventForm = React.lazy(() => import('./EventForm'));
+const Settings = React.lazy(() => import('./Settings'));
+
+const App: React.FC = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <EventForm />
+    </Suspense>
+  );
+};
+```
+
+## 状态管理规范
+
+### 1. 本地状态使用useState
+```typescript
+const EventForm: React.FC = () => {
+  const [formData, setFormData] = useState<EventFormData>({
+    title: '',
+    date: new Date(),
+    category: 'personal',
+    repeatType: 'none'
+  });
+  
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  const handleInputChange = (field: keyof EventFormData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // 清除对应字段的错误
+    setErrors(prev => ({ ...prev, [field]: '' }));
+  };
+};
+```
+
+### 2. 复杂状态使用useReducer
+```typescript
+interface CalendarState {
+  currentDate: Date;
+  selectedDate: Date | null;
+  events: Event[];
+  viewMode: 'month' | 'week' | 'day';
+}
+
+type CalendarAction = 
+  | { type: 'SET_CURRENT_DATE'; payload: Date }
+  | { type: 'SELECT_DATE'; payload: Date }
+  | { type: 'ADD_EVENT'; payload: Event }
+  | { type: 'SET_VIEW_MODE'; payload: 'month' | 'week' | 'day' };
+
+const calendarReducer = (state: CalendarState, action: CalendarAction): CalendarState => {
+  switch (action.type) {
+    case 'SET_CURRENT_DATE':
+      return { ...state, currentDate: action.payload };
+    case 'SELECT_DATE':
+      return { ...state, selectedDate: action.payload };
+    case 'ADD_EVENT':
+      return { ...state, events: [...state.events, action.payload] };
+    case 'SET_VIEW_MODE':
+      return { ...state, viewMode: action.payload };
+    default:
+      return state;
+  }
+};
+
+const useCalendarState = () => {
+  const [state, dispatch] = useReducer(calendarReducer, {
+    currentDate: new Date(),
+    selectedDate: null,
+    events: [],
+    viewMode: 'month'
+  });
+  
+  return { state, dispatch };
+};
+```
+
+## 错误边界处理
+
+### 1. 错误边界组件
+```typescript
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+class ErrorBoundary extends React.Component<
+  React.PropsWithChildren<{}>, 
+  ErrorBoundaryState
+> {
+  constructor(props: React.PropsWithChildren<{}>) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+  
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+  
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="error-boundary">
+          <h2>Something went wrong.</h2>
+          <button onClick={() => this.setState({ hasError: false })}>
+            Try again
+          </button>
+        </div>
+      );
+    }
+    
+    return this.props.children;
+  }
+}
+```
+
+## 组件测试规范
+
+### 1. 组件测试示例
+```typescript
+import { render, screen, fireEvent } from '@testing-library/react';
+import Calendar from './Calendar';
+
+describe('Calendar Component', () => {
+  const mockOnDateSelect = jest.fn();
+  
+  beforeEach(() => {
+    mockOnDateSelect.mockClear();
+  });
+  
+  it('should render calendar with current date', () => {
+    const currentDate = new Date(2024, 0, 15);
+    render(<Calendar date={currentDate} onDateSelect={mockOnDateSelect} />);
+    
+    expect(screen.getByText('January 2024')).toBeInTheDocument();
+  });
+  
+  it('should call onDateSelect when date is clicked', () => {
+    const currentDate = new Date(2024, 0, 15);
+    render(<Calendar date={currentDate} onDateSelect={mockOnDateSelect} />);
+    
+    const dateElement = screen.getByText('15');
+    fireEvent.click(dateElement);
+    
+    expect(mockOnDateSelect).toHaveBeenCalledWith(expect.any(Date));
+  });
+});
+```

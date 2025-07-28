@@ -1,0 +1,600 @@
+# 万年历功能开发规范
+
+## 农历功能实现
+
+### 1. 农历计算Hook
+```typescript
+import { useState, useEffect } from 'react';
+import { Lunar } from 'lunar-javascript';
+
+interface LunarData {
+  lunarDate: string;
+  festivals: string[];
+  solarTerms: string[];
+  zodiac: string;
+  yearGanZhi: string;
+}
+
+const useLunarDate = (date: Date): LunarData => {
+  const [lunarData, setLunarData] = useState<LunarData>({
+    lunarDate: '',
+    festivals: [],
+    solarTerms: [],
+    zodiac: '',
+    yearGanZhi: ''
+  });
+  
+  useEffect(() => {
+    const calculateLunar = () => {
+      const lunar = Lunar.fromDate(date);
+      
+      setLunarData({
+        lunarDate: lunar.getDayInChinese(),
+        festivals: lunar.getFestivals(),
+        solarTerms: lunar.getJieQi(),
+        zodiac: lunar.getYearShengXiao(),
+        yearGanZhi: lunar.getYearInGanZhi()
+      });
+    };
+    
+    calculateLunar();
+  }, [date]);
+  
+  return lunarData;
+};
+```
+
+### 2. 农历日期转换工具
+```typescript
+import { Lunar } from 'lunar-javascript';
+
+export const getLunarDate = (date: Date): string => {
+  const lunar = Lunar.fromDate(date);
+  return lunar.getDayInChinese();
+};
+
+export const getLunarYear = (date: Date): string => {
+  const lunar = Lunar.fromDate(date);
+  return `${lunar.getYearInGanZhi()}年[${lunar.getYearShengXiao()}]`;
+};
+
+export const getLunarMonth = (date: Date): string => {
+  const lunar = Lunar.fromDate(date);
+  return lunar.getMonthInChinese();
+};
+
+export const getFestivals = (date: Date): string[] => {
+  const lunar = Lunar.fromDate(date);
+  return lunar.getFestivals();
+};
+
+export const getSolarTerms = (date: Date): string[] => {
+  const lunar = Lunar.fromDate(date);
+  return lunar.getJieQi();
+};
+```
+
+## 日历组件实现
+
+### 1. 主日历组件
+```typescript
+import React, { useState, useMemo, useCallback } from 'react';
+import { Calendar, Badge } from 'antd';
+import type { CalendarProps } from 'antd';
+import dayjs, { Dayjs } from 'dayjs';
+import { useLunarDate } from '../hooks/useLunarDate';
+import { getFestivals, getSolarTerms } from '../utils/lunarUtils';
+
+interface CalendarComponentProps {
+  events?: Event[];
+  onDateSelect?: (date: Date) => void;
+  showLunar?: boolean;
+}
+
+const CalendarComponent: React.FC<CalendarComponentProps> = ({
+  events = [],
+  onDateSelect,
+  showLunar = true
+}) => {
+  const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
+  
+  const dateCellRender = useCallback((value: Dayjs) => {
+    const date = value.toDate();
+    const lunarData = useLunarDate(date);
+    const dayEvents = events.filter(event => 
+      dayjs(event.date).isSame(value, 'day')
+    );
+    
+    const festivals = getFestivals(date);
+    const solarTerms = getSolarTerms(date);
+    
+    return (
+      <div className="calendar-day-cell">
+        <div className="gregorian-date">{value.date()}</div>
+        {showLunar && (
+          <div className="lunar-date">{lunarData.lunarDate}</div>
+        )}
+        {festivals.length > 0 && (
+          <div className="festivals">
+            {festivals.map(festival => (
+              <Badge key={festival} color="red" text={festival} />
+            ))}
+          </div>
+        )}
+        {solarTerms.length > 0 && (
+          <div className="solar-terms">
+            {solarTerms.map(term => (
+              <Badge key={term} color="blue" text={term} />
+            ))}
+          </div>
+        )}
+        {dayEvents.length > 0 && (
+          <div className="events">
+            {dayEvents.map(event => (
+              <Badge key={event.id} color="green" text={event.title} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }, [events, showLunar]);
+  
+  const onSelect = useCallback((date: Dayjs) => {
+    setSelectedDate(date);
+    onDateSelect?.(date.toDate());
+  }, [onDateSelect]);
+  
+  return (
+    <Calendar
+      value={selectedDate}
+      onSelect={onSelect}
+      dateCellRender={dateCellRender}
+      headerRender={({ value, onChange }) => (
+        <div className="calendar-header">
+          <button onClick={() => onChange(value.subtract(1, 'year'))}>
+            上一年
+          </button>
+          <button onClick={() => onChange(value.subtract(1, 'month'))}>
+            上一月
+          </button>
+          <span>{value.format('YYYY年MM月')}</span>
+          <button onClick={() => onChange(value.add(1, 'month'))}>
+            下一月
+          </button>
+          <button onClick={() => onChange(value.add(1, 'year'))}>
+            下一年
+          </button>
+          <button onClick={() => onChange(dayjs())}>
+            今日
+          </button>
+        </div>
+      )}
+    />
+  );
+};
+```
+
+### 2. 日期选择组件
+```typescript
+import React, { useState } from 'react';
+import { DatePicker, Button, Space } from 'antd';
+import dayjs, { Dayjs } from 'dayjs';
+
+interface DateSelectorProps {
+  value?: Date;
+  onChange?: (date: Date) => void;
+  showQuickSelect?: boolean;
+}
+
+const DateSelector: React.FC<DateSelectorProps> = ({
+  value,
+  onChange,
+  showQuickSelect = true
+}) => {
+  const [selectedDate, setSelectedDate] = useState<Dayjs>(
+    value ? dayjs(value) : dayjs()
+  );
+  
+  const handleDateChange = (date: Dayjs | null) => {
+    if (date) {
+      setSelectedDate(date);
+      onChange?.(date.toDate());
+    }
+  };
+  
+  const quickSelectDate = (days: number) => {
+    const newDate = dayjs().add(days, 'day');
+    setSelectedDate(newDate);
+    onChange?.(newDate.toDate());
+  };
+  
+  return (
+    <div className="date-selector">
+      <DatePicker
+        value={selectedDate}
+        onChange={handleDateChange}
+        format="YYYY-MM-DD"
+        placeholder="选择日期"
+      />
+      {showQuickSelect && (
+        <Space>
+          <Button size="small" onClick={() => quickSelectDate(-1)}>
+            昨天
+          </Button>
+          <Button size="small" onClick={() => quickSelectDate(0)}>
+            今天
+          </Button>
+          <Button size="small" onClick={() => quickSelectDate(1)}>
+            明天
+          </Button>
+        </Space>
+      )}
+    </div>
+  );
+};
+```
+
+## 事件管理功能
+
+### 1. 事件类型定义
+```typescript
+export interface Event {
+  id: string;
+  title: string;
+  description?: string;
+  date: Date;
+  lunarDate?: string;
+  repeatType: 'none' | 'yearly' | 'monthly' | 'weekly';
+  category: 'personal' | 'work' | 'holiday' | 'custom';
+  color?: string;
+  reminder?: boolean;
+  reminderTime?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface EventFormData {
+  title: string;
+  description?: string;
+  date: Date;
+  lunarDate?: string;
+  repeatType: 'none' | 'yearly' | 'monthly' | 'weekly';
+  category: 'personal' | 'work' | 'holiday' | 'custom';
+  color?: string;
+  reminder?: boolean;
+  reminderTime?: Date;
+}
+```
+
+### 2. 事件管理Hook
+```typescript
+import { useState, useCallback } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+
+const useEventManager = () => {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(false);
+  
+  const addEvent = useCallback(async (eventData: EventFormData) => {
+    setLoading(true);
+    try {
+      const newEvent: Event = {
+        ...eventData,
+        id: uuidv4(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      // 调用IPC添加事件
+      const result = await window.electron.ipcRenderer.invoke('events:add', newEvent);
+      
+      if (result.success) {
+        setEvents(prev => [...prev, newEvent]);
+        return { success: true, data: newEvent };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : '添加事件失败' 
+      };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  
+  const updateEvent = useCallback(async (id: string, eventData: Partial<EventFormData>) => {
+    setLoading(true);
+    try {
+      const result = await window.electron.ipcRenderer.invoke('events:update', id, eventData);
+      
+      if (result.success) {
+        setEvents(prev => prev.map(event => 
+          event.id === id 
+            ? { ...event, ...eventData, updatedAt: new Date() }
+            : event
+        ));
+        return { success: true };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : '更新事件失败' 
+      };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  
+  const deleteEvent = useCallback(async (id: string) => {
+    setLoading(true);
+    try {
+      const result = await window.electron.ipcRenderer.invoke('events:delete', id);
+      
+      if (result.success) {
+        setEvents(prev => prev.filter(event => event.id !== id));
+        return { success: true };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : '删除事件失败' 
+      };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  
+  const getEventsByDate = useCallback((date: Date) => {
+    return events.filter(event => {
+      const eventDate = new Date(event.date);
+      return eventDate.getFullYear() === date.getFullYear() &&
+             eventDate.getMonth() === date.getMonth() &&
+             eventDate.getDate() === date.getDate();
+    });
+  }, [events]);
+  
+  return {
+    events,
+    loading,
+    addEvent,
+    updateEvent,
+    deleteEvent,
+    getEventsByDate
+  };
+};
+```
+
+### 3. 事件表单组件
+```typescript
+import React, { useState, useEffect } from 'react';
+import { Form, Input, DatePicker, Select, Switch, Button, Space } from 'antd';
+import dayjs, { Dayjs } from 'dayjs';
+import { useLunarDate } from '../hooks/useLunarDate';
+
+interface EventFormProps {
+  initialData?: EventFormData;
+  onSubmit?: (data: EventFormData) => void;
+  onCancel?: () => void;
+}
+
+const EventForm: React.FC<EventFormProps> = ({
+  initialData,
+  onSubmit,
+  onCancel
+}) => {
+  const [form] = Form.useForm();
+  const [selectedDate, setSelectedDate] = useState<Dayjs>(
+    initialData?.date ? dayjs(initialData.date) : dayjs()
+  );
+  
+  const lunarData = useLunarDate(selectedDate.toDate());
+  
+  useEffect(() => {
+    if (initialData) {
+      form.setFieldsValue({
+        ...initialData,
+        date: dayjs(initialData.date),
+        reminderTime: initialData.reminderTime ? dayjs(initialData.reminderTime) : undefined
+      });
+    }
+  }, [initialData, form]);
+  
+  const handleDateChange = (date: Dayjs | null) => {
+    if (date) {
+      setSelectedDate(date);
+      form.setFieldsValue({ date });
+    }
+  };
+  
+  const handleSubmit = async (values: any) => {
+    const formData: EventFormData = {
+      ...values,
+      date: values.date.toDate(),
+      lunarDate: lunarData.lunarDate,
+      reminderTime: values.reminderTime?.toDate()
+    };
+    
+    onSubmit?.(formData);
+  };
+  
+  return (
+    <Form
+      form={form}
+      layout="vertical"
+      onFinish={handleSubmit}
+      initialValues={{
+        repeatType: 'none',
+        category: 'personal',
+        reminder: false
+      }}
+    >
+      <Form.Item
+        name="title"
+        label="事件标题"
+        rules={[{ required: true, message: '请输入事件标题' }]}
+      >
+        <Input placeholder="请输入事件标题" />
+      </Form.Item>
+      
+      <Form.Item name="description" label="事件描述">
+        <Input.TextArea placeholder="请输入事件描述" rows={3} />
+      </Form.Item>
+      
+      <Form.Item
+        name="date"
+        label="事件日期"
+        rules={[{ required: true, message: '请选择事件日期' }]}
+      >
+        <DatePicker
+          value={selectedDate}
+          onChange={handleDateChange}
+          format="YYYY-MM-DD"
+          placeholder="选择日期"
+        />
+      </Form.Item>
+      
+      {lunarData.lunarDate && (
+        <Form.Item label="农历日期">
+          <span>{lunarData.lunarDate}</span>
+        </Form.Item>
+      )}
+      
+      <Form.Item name="category" label="事件分类">
+        <Select>
+          <Select.Option value="personal">个人</Select.Option>
+          <Select.Option value="work">工作</Select.Option>
+          <Select.Option value="holiday">节日</Select.Option>
+          <Select.Option value="custom">自定义</Select.Option>
+        </Select>
+      </Form.Item>
+      
+      <Form.Item name="repeatType" label="重复类型">
+        <Select>
+          <Select.Option value="none">不重复</Select.Option>
+          <Select.Option value="yearly">每年重复</Select.Option>
+          <Select.Option value="monthly">每月重复</Select.Option>
+          <Select.Option value="weekly">每周重复</Select.Option>
+        </Select>
+      </Form.Item>
+      
+      <Form.Item name="reminder" label="设置提醒" valuePropName="checked">
+        <Switch />
+      </Form.Item>
+      
+      <Form.Item
+        name="reminderTime"
+        label="提醒时间"
+        dependencies={['reminder']}
+      >
+        <DatePicker
+          showTime
+          format="YYYY-MM-DD HH:mm"
+          placeholder="选择提醒时间"
+          disabled={!form.getFieldValue('reminder')}
+        />
+      </Form.Item>
+      
+      <Form.Item>
+        <Space>
+          <Button type="primary" htmlType="submit">
+            保存
+          </Button>
+          <Button onClick={onCancel}>
+            取消
+          </Button>
+        </Space>
+      </Form.Item>
+    </Form>
+  );
+};
+```
+
+## 假期数据管理
+
+### 1. 假期数据获取
+```typescript
+import axios from 'axios';
+
+export interface Holiday {
+  date: string;
+  name: string;
+  type: 'holiday' | 'workday';
+  description?: string;
+}
+
+export const fetchHolidays = async (): Promise<Holiday[]> => {
+  try {
+    const response = await axios.get(
+      'https://raw.githubusercontent.com/zfdang/chinese-lunar-calendar-for-mac/master/WanNianLi/WanNianLi/Resources/vendors/holidays.js'
+    );
+    
+    // 解析holidays.js文件内容
+    const holidaysData = parseHolidaysData(response.data);
+    return holidaysData;
+  } catch (error) {
+    console.error('获取假期数据失败:', error);
+    return [];
+  }
+};
+
+const parseHolidaysData = (data: string): Holiday[] => {
+  // 解析holidays.js文件的具体实现
+  // 这里需要根据实际的文件格式进行解析
+  return [];
+};
+```
+
+### 2. 假期数据Hook
+```typescript
+import { useState, useEffect } from 'react';
+
+const useHolidays = () => {
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [loading, setLoading] = useState(false);
+  
+  const fetchHolidays = async () => {
+    setLoading(true);
+    try {
+      const result = await window.electron.ipcRenderer.invoke('holidays:get');
+      if (result.success) {
+        setHolidays(result.data);
+      }
+    } catch (error) {
+      console.error('获取假期数据失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const updateHolidays = async () => {
+    setLoading(true);
+    try {
+      const result = await window.electron.ipcRenderer.invoke('holidays:update');
+      if (result.success) {
+        setHolidays(result.data);
+      }
+    } catch (error) {
+      console.error('更新假期数据失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    fetchHolidays();
+  }, []);
+  
+  return {
+    holidays,
+    loading,
+    fetchHolidays,
+    updateHolidays
+  };
+};
+```

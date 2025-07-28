@@ -1,0 +1,164 @@
+# TypeScript代码规范
+
+## 类型定义规范
+
+### 1. 严格使用TypeScript
+- 避免使用 `any` 类型
+- 为所有函数参数和返回值定义类型
+- 使用 `interface` 定义对象类型，使用 `type` 定义联合类型
+- 导出类型时使用 `export type`
+
+### 2. 类型定义示例
+```typescript
+// 接口定义
+export interface CalendarProps {
+  date: Date;
+  onDateSelect: (date: Date) => void;
+  events?: Event[];
+}
+
+// 联合类型
+export type RepeatType = 'none' | 'yearly' | 'monthly' | 'weekly';
+
+// 枚举类型
+export enum EventCategory {
+  PERSONAL = 'personal',
+  WORK = 'work',
+  HOLIDAY = 'holiday'
+}
+
+// 工具类型
+export type EventFormData = Omit<Event, 'id' | 'createdAt'>;
+```
+
+### 3. 函数类型定义
+```typescript
+// 函数类型
+export type DateFormatter = (date: Date) => string;
+
+// 异步函数类型
+export type EventFetcher = (date: Date) => Promise<Event[]>;
+
+// 回调函数类型
+export type EventCallback = (event: Event) => void;
+```
+
+### 4. 泛型使用
+```typescript
+// 泛型接口
+export interface ApiResponse<T> {
+  data: T;
+  success: boolean;
+  message?: string;
+}
+
+// 泛型函数
+export function createEvent<T extends Event>(eventData: T): T {
+  return { ...eventData, id: generateId() };
+}
+```
+
+## 组件类型规范
+
+### 1. React组件Props
+```typescript
+interface CalendarProps {
+  date: Date;
+  onDateSelect: (date: Date) => void;
+  events?: Event[];
+  showLunar?: boolean;
+}
+
+const Calendar: React.FC<CalendarProps> = ({ 
+  date, 
+  onDateSelect, 
+  events = [], 
+  showLunar = true 
+}) => {
+  // 组件实现
+};
+```
+
+### 2. 自定义Hook类型
+```typescript
+interface UseLunarDateReturn {
+  lunarDate: string;
+  festivals: string[];
+  solarTerms: string[];
+}
+
+const useLunarDate = (date: Date): UseLunarDateReturn => {
+  // Hook实现
+};
+```
+
+### 3. 状态管理类型
+```typescript
+interface AppState {
+  currentDate: Date;
+  events: Event[];
+  settings: AppSettings;
+}
+
+type AppAction = 
+  | { type: 'SET_DATE'; payload: Date }
+  | { type: 'ADD_EVENT'; payload: Event }
+  | { type: 'UPDATE_SETTINGS'; payload: Partial<AppSettings> };
+```
+
+## 错误处理类型
+
+### 1. 错误类型定义
+```typescript
+export interface AppError {
+  code: string;
+  message: string;
+  details?: unknown;
+}
+
+export type Result<T> = 
+  | { success: true; data: T }
+  | { success: false; error: AppError };
+```
+
+### 2. 异步错误处理
+```typescript
+export async function safeApiCall<T>(
+  apiCall: () => Promise<T>
+): Promise<Result<T>> {
+  try {
+    const data = await apiCall();
+    return { success: true, data };
+  } catch (error) {
+    return { 
+      success: false, 
+      error: { 
+        code: 'API_ERROR', 
+        message: error instanceof Error ? error.message : 'Unknown error' 
+      } 
+    };
+  }
+}
+```
+
+## 最佳实践
+
+### 1. 类型断言
+- 优先使用类型守卫而不是类型断言
+- 必要时使用 `as` 进行类型断言
+- 避免使用 `!` 非空断言
+
+### 2. 可选属性
+- 使用 `?` 标记可选属性
+- 使用 `Partial<T>` 创建所有属性可选的对象类型
+- 使用 `Required<T>` 创建所有属性必需的对象类型
+
+### 3. 只读属性
+- 使用 `readonly` 标记不可变属性
+- 使用 `Readonly<T>` 创建只读对象类型
+
+### 4. 条件类型
+```typescript
+type NonNullable<T> = T extends null | undefined ? never : T;
+type EventId = NonNullable<Event['id']>;
+```
