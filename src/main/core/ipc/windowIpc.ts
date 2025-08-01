@@ -17,15 +17,18 @@ import {
  */
 export function registerWindowIpcHandlers(): void {
   // 显示日历弹出窗口
-  ipcMain.handle('window:show-calendar-popup', async () => {
-    try {
-      showCalendarPopupWindow()
-      return { success: true }
-    } catch (error) {
-      console.error('显示日历弹出窗口失败:', error)
-      return { success: false, error: error instanceof Error ? error.message : String(error) }
+  ipcMain.handle(
+    'window:show-calendar-popup',
+    async (_event: IpcMainInvokeEvent, x?: number, y?: number) => {
+      try {
+        showCalendarPopupWindow(x, y)
+        return { success: true }
+      } catch (error) {
+        console.error('显示日历弹出窗口失败:', error)
+        return { success: false, error: error instanceof Error ? error.message : String(error) }
+      }
     }
-  })
+  )
 
   // 隐藏日历弹出窗口
   ipcMain.handle('window:hide-calendar-popup', async () => {

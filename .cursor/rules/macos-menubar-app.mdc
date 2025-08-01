@@ -1,0 +1,160 @@
+# macOS 菜单栏应用开发规范
+
+## 概述
+
+本文档规范了在 macOS 上实现菜单栏应用（Menu Bar App）的开发标准和最佳实践。
+
+## 设计原则
+
+### 1. 用户体验
+
+- **即时访问**: 点击菜单栏图标应立即弹出日历界面
+- **位置精确**: 弹出窗口应出现在图标正下方
+- **系统集成**: 完全符合 macOS 原生应用行为
+- **简洁操作**: 最少点击次数完成常用操作
+
+### 2. 视觉设计
+
+- **图标规范**: 18x18像素，黑白色调，支持明暗主题
+- **界面风格**: 遵循 macOS Human Interface Guidelines
+- **动画效果**: 流畅的显示/隐藏过渡
+- **响应式**: 适配不同分辨率和屏幕
+
+## 技术实现
+
+### 1. 图标系统
+
+```typescript
+// 专用菜单栏图标创建
+export function createMacOSMenuBarIcon(): NativeImage {
+  // 代码生成 18x18 黑白日历图标
+  // 符合 macOS 设计规范
+}
+
+// 平台特定图标处理
+if (process.platform === 'darwin') {
+  resizedIcon = createMenuBarIconFromExisting(iconPath)
+} else {
+  resizedIcon = icon.resize({ width: 16, height: 16 })
+}
+```
+
+### 2. 交互行为
+
+```typescript
+// macOS 特定的点击处理
+function handleTrayClick(): void {
+  if (process.platform === 'darwin') {
+    // 在图标下方弹出日历窗口
+    showCalendarPopupNearTray()
+  } else {
+    // Windows/Linux: 切换弹出窗口
+    toggleCalendarPopupWindow()
+  }
+}
+```
+
+### 3. 窗口定位
+
+```typescript
+// 精确定位弹出窗口
+async function showCalendarPopupNearTray(): Promise<void> {
+  const trayBounds = tray.getBounds()
+  const x = Math.round(trayBounds.x + trayBounds.width / 2 - 150)
+  const y = Math.round(trayBounds.y + trayBounds.height + 5)
+  await showCalendarPopupWindow(x, y)
+}
+```
+
+## 功能特性
+
+### 1. 核心交互
+
+- **左键点击**: 弹出/隐藏日历窗口
+- **右键点击**: 在 macOS 上也弹出日历（或简化菜单）
+- **窗口失焦**: 自动隐藏弹出窗口
+- **位置记忆**: 智能窗口位置计算
+
+### 2. 系统集成
+
+- **启动时创建**: 应用启动时自动创建菜单栏图标
+- **后台运行**: 关闭主窗口时保持菜单栏图标
+- **资源清理**: 应用退出时正确清理托盘资源
+
+### 3. 跨平台兼容
+
+```typescript
+// 平台特定的菜单设置
+if (process.platform !== 'darwin') {
+  updateTrayMenu() // 仅在非 macOS 平台显示右键菜单
+}
+
+// 平台特定的事件处理
+if (process.platform !== 'darwin') {
+  tray.on('double-click', handleTrayDoubleClick)
+}
+```
+
+## 最佳实践
+
+### 1. 性能优化
+
+- **懒加载**: 仅在需要时创建弹出窗口
+- **资源复用**: 复用现有窗口实例
+- **内存管理**: 及时清理不需要的资源
+
+### 2. 错误处理
+
+```typescript
+try {
+  const trayBounds = tray.getBounds()
+  // 正常流程
+} catch (error) {
+  console.error('显示菜单栏日历失败:', error)
+  // 降级方案：使用默认位置
+  await showCalendarPopupWindow()
+}
+```
+
+### 3. 用户体验
+
+- **即时响应**: 点击后立即显示反馈
+- **位置智能**: 确保弹出窗口在屏幕可见区域
+- **状态保持**: 保持用户的操作状态和偏好
+
+## 开发指南
+
+### 1. 图标设计要求
+
+- **尺寸**: 18x18 像素（macOS 标准）
+- **颜色**: 纯黑或纯白，支持系统主题
+- **风格**: 简洁、识别度高
+- **格式**: PNG，支持透明背景
+
+### 2. 窗口设计要求
+
+- **大小**: 适中，不超过屏幕 1/3
+- **位置**: 图标正下方，边缘检测
+- **样式**: 无边框，圆角，阴影
+- **内容**: 清晰的布局和导航
+
+### 3. 测试要点
+
+- [ ] 图标在明暗主题下的显示效果
+- [ ] 不同分辨率下的图标清晰度
+- [ ] 弹出窗口的位置精确性
+- [ ] 多显示器环境下的行为
+- [ ] 系统重启后的功能保持
+
+## 注意事项
+
+1. **权限要求**: macOS 可能需要辅助功能权限
+2. **签名要求**: 发布版本需要有效的开发者签名
+3. **沙盒兼容**: 考虑 App Store 沙盒限制
+4. **系统兼容**: 测试不同 macOS 版本的兼容性
+
+## 相关资源
+
+- [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/macos/overview/themes/)
+- [Electron Tray API Documentation](https://www.electronjs.org/docs/api/tray)
+- [macOS Menu Bar App Best Practices](https://developer.apple.com/design/human-interface-guidelines/macos/extensions/menu-bar-extras/)

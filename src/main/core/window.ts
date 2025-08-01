@@ -58,20 +58,39 @@ export function createMainWindow(): BrowserWindow {
   // 加载页面
   loadWindowContent(mainWindow)
 
-  // 窗口就绪时显示
+  // 窗口就绪时不自动显示（菜单栏应用特性）
   mainWindow.on('ready-to-show', () => {
-    if (!mainWindow) return
-    mainWindow.show()
+    console.log('主窗口已准备就绪，但不自动显示（菜单栏应用）')
 
     // 开发环境下打开开发者工具
-    if (is.dev) {
-      mainWindow.webContents.openDevTools()
-    }
+    // if (is.dev) {
+    //   mainWindow?.webContents.openDevTools()
+    // }
   })
 
   // 窗口关闭事件
   mainWindow.on('closed', () => {
     mainWindow = null
+  })
+
+  // 阻止窗口关闭，改为隐藏到托盘
+  mainWindow.on('close', async (event) => {
+    if (process.platform === 'darwin') {
+      // macOS行为：关闭窗口但保持应用运行
+      event.preventDefault()
+      mainWindow?.hide()
+    } else {
+      // Windows/Linux：如果有托盘，隐藏到托盘
+      try {
+        const { isTraySupported } = await import('./tray')
+        if (isTraySupported()) {
+          event.preventDefault()
+          mainWindow?.hide()
+        }
+      } catch (error) {
+        console.error('导入托盘模块失败:', error)
+      }
+    }
   })
 
   return mainWindow
@@ -165,10 +184,25 @@ export function createCalendarPopupWindow(): BrowserWindow {
 /**
  * 显示日历弹出窗口
  */
-export function showCalendarPopupWindow(): void {
+export async function showCalendarPopupWindow(x?: number, y?: number): Promise<void> {
   if (!calendarPopupWindow || calendarPopupWindow.isDestroyed()) {
     createCalendarPopupWindow()
-  } else {
+  }
+
+  if (calendarPopupWindow) {
+    // 如果提供了位置参数，设置窗口位置
+    if (x !== undefined && y !== undefined) {
+      const { screen } = await import('electron')
+      const workArea = screen.getPrimaryDisplay().workAreaSize
+      const windowWidth = 300
+      const windowHeight = 400
+
+      // 确保位置在屏幕范围内
+      const targetX = Math.max(0, Math.min(x, workArea.width - windowWidth))
+      const targetY = Math.max(0, Math.min(y, workArea.height - windowHeight))
+      calendarPopupWindow.setPosition(targetX, targetY)
+    }
+
     calendarPopupWindow.show()
     calendarPopupWindow.focus()
   }

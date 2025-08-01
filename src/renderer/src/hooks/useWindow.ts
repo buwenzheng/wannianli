@@ -16,7 +16,7 @@ export interface WindowState {
  */
 export function usePopupWindow(): {
   state: WindowState
-  show: () => Promise<boolean>
+  show: (x?: number, y?: number) => Promise<boolean>
   hide: () => Promise<boolean>
   toggle: () => Promise<boolean>
   close: () => Promise<boolean>
@@ -46,20 +46,23 @@ export function usePopupWindow(): {
   }, [])
 
   // 显示弹出窗口
-  const show = useCallback(async (): Promise<boolean> => {
-    try {
-      const result = await window.api.window.showCalendarPopup()
-      if (result.success) {
-        await refreshState()
-        return true
+  const show = useCallback(
+    async (x?: number, y?: number): Promise<boolean> => {
+      try {
+        const result = await window.api.window.showCalendarPopup(x, y)
+        if (result.success) {
+          await refreshState()
+          return true
+        }
+        console.error('显示弹出窗口失败:', result.error)
+        return false
+      } catch (error) {
+        console.error('显示弹出窗口失败:', error)
+        return false
       }
-      console.error('显示弹出窗口失败:', result.error)
-      return false
-    } catch (error) {
-      console.error('显示弹出窗口失败:', error)
-      return false
-    }
-  }, [refreshState])
+    },
+    [refreshState]
+  )
 
   // 隐藏弹出窗口
   const hide = useCallback(async (): Promise<boolean> => {

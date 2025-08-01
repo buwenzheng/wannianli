@@ -156,6 +156,8 @@ features/calendar/
 ### 关键规范文档
 - [Tailwind CSS v4 迁移指南](mdc:.cursor/rules/tailwind-v4-migration.mdc) - v4完整迁移方案 🚀
 - [图标使用规范](mdc:.cursor/rules/icon-usage-guide.mdc) - Lucide React图标方案 🎨
+- [macOS 菜单栏应用规范](mdc:.cursor/rules/macos-menubar-app.mdc) - 菜单栏应用开发指南 🍎
+- [动态日期图标规范](mdc:.cursor/rules/dynamic-date-icon.mdc) - 智能日期图标实现 📅
 - [配置文件编写规范](mdc:.cursor/rules/config-files-standards.mdc) - 避免模块语法错误 ⚠️
 - [TypeScript 代码格式规范](mdc:.cursor/rules/typescript-code-style.mdc) - 统一代码风格 🎨
 - [开发工作流程规范](mdc:.cursor/rules/development-workflow.mdc) - 代码提交流程 🔄

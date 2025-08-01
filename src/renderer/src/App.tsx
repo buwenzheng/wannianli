@@ -1,9 +1,15 @@
 import { useState } from 'react'
 import { Calendar } from './components/Calendar'
 import Versions from './components/Versions'
+import { IconButton } from './components/ui'
+import { flatIcons } from './constants/icons'
+import { usePopupWindow } from './hooks/useWindow'
+import { useTray } from './hooks/useTray'
 
 function App(): React.JSX.Element {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const { toggle: togglePopup, state: popupState } = usePopupWindow()
+  const { state: trayState } = useTray()
 
   const handleDateSelect = (date: Date): void => {
     setSelectedDate(date)
@@ -12,6 +18,10 @@ function App(): React.JSX.Element {
 
   const handleMonthChange = (date: Date): void => {
     console.log('月份变化:', date)
+  }
+
+  const handleTogglePopup = async (): Promise<void> => {
+    await togglePopup()
   }
 
   return (
@@ -63,9 +73,36 @@ function App(): React.JSX.Element {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
                 开发信息
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <p className="text-xs text-gray-500 dark:text-gray-500">按 F12 打开开发者工具</p>
                 <Versions />
+
+                {/* 窗口功能演示 */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <IconButton
+                      icon={flatIcons.calendar}
+                      variant="primary"
+                      size="sm"
+                      onClick={handleTogglePopup}
+                    />
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
+                      弹出日历 {popupState.isVisible ? '(已打开)' : '(已关闭)'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <IconButton
+                      icon={flatIcons.settings}
+                      variant={trayState.isCreated ? 'primary' : 'secondary'}
+                      size="sm"
+                      disabled
+                    />
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
+                      系统托盘 {trayState.isCreated ? '(已启用)' : '(未启用)'}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

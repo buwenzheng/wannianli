@@ -5,7 +5,7 @@ import { ipcRenderer } from 'electron'
  */
 export interface WindowApi {
   // 日历弹出窗口操作
-  showCalendarPopup: () => Promise<{ success: boolean; error?: string }>
+  showCalendarPopup: (x?: number, y?: number) => Promise<{ success: boolean; error?: string }>
   hideCalendarPopup: () => Promise<{ success: boolean; error?: string }>
   toggleCalendarPopup: () => Promise<{ success: boolean; error?: string }>
   closeCalendarPopup: () => Promise<{ success: boolean; error?: string }>
@@ -40,7 +40,8 @@ export interface WindowApi {
 
 export const windowApi: WindowApi = {
   // 日历弹出窗口操作
-  showCalendarPopup: () => ipcRenderer.invoke('window:show-calendar-popup'),
+  showCalendarPopup: (x?: number, y?: number) =>
+    ipcRenderer.invoke('window:show-calendar-popup', x, y),
   hideCalendarPopup: () => ipcRenderer.invoke('window:hide-calendar-popup'),
   toggleCalendarPopup: () => ipcRenderer.invoke('window:toggle-calendar-popup'),
   closeCalendarPopup: () => ipcRenderer.invoke('window:close-calendar-popup'),

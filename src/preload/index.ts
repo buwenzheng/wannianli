@@ -1,10 +1,11 @@
 import { contextBridge } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import { windowApi } from './api'
+import { windowApi, trayApi } from './api'
 
 // Custom APIs for renderer
 const api = {
-  window: windowApi
+  window: windowApi,
+  tray: trayApi
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
