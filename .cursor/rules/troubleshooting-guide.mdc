@@ -2,7 +2,109 @@
 
 ## 构建和配置问题
 
-### 1. PostCSS 配置错误 ⚠️ 
+### 1. Tailwind CSS v4 自定义字体配置错误 🚨
+
+#### 错误信息
+```
+Error: Cannot apply unknown utility class `font-chinese`. Are you using CSS modules or similar and missing `@reference`?
+```
+
+#### 原因分析
+Tailwind CSS v4 不再使用 `tailwind.config.js` 配置自定义字体，需要使用 `@theme` 指令在CSS中定义。
+
+#### 解决方案
+**步骤1：更新CSS文件**
+```css
+/* ❌ 错误写法 - v3语法 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ✅ 正确写法 - v4语法 */
+@import 'tailwindcss';
+
+@theme {
+  --font-chinese: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', ui-sans-serif, system-ui, sans-serif;
+  --spacing-calendar: 2.5rem;
+  --grid-template-columns-calendar: repeat(7, 1fr);
+}
+```
+
+**步骤2：移除config.js中的所有主题配置**
+```javascript
+// ❌ v4中不再需要
+module.exports = {
+  theme: {
+    extend: {
+      fontFamily: {
+        chinese: ['PingFang SC', 'sans-serif']
+      },
+      gridTemplateColumns: {
+        calendar: 'repeat(7, 1fr)'
+      },
+      spacing: {
+        calendar: '2.5rem'
+      }
+    }
+  }
+}
+
+// ✅ v4中所有主题变量通过@theme配置
+```
+
+**常见的v4主题变量映射**
+```css
+@theme {
+  /* 字体 */
+  --font-{name}: font-family-value;
+  
+  /* 间距 */
+  --spacing-{name}: size-value;
+  
+  /* 网格列 */
+  --grid-template-columns-{name}: grid-value;
+  
+  /* 颜色 */
+  --color-{name}-{shade}: color-value;
+}
+```
+
+### 2. Tailwind CSS v4 PostCSS插件错误 🚨
+
+#### 错误信息
+```
+[plugin:vite:css] [postcss] It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss`
+```
+
+#### 原因分析
+Tailwind CSS v4 将PostCSS插件移到了独立的包 `@tailwindcss/postcss` 中。
+
+#### 解决方案
+```bash
+# 1. 安装新的PostCSS插件
+npm install @tailwindcss/postcss --save-dev
+```
+
+```javascript
+// 2. 更新 postcss.config.js
+// ❌ 错误写法 (v4不再支持)
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {}
+  }
+}
+
+// ✅ 正确写法 (v4新语法)
+module.exports = {
+  plugins: {
+    '@tailwindcss/postcss': {},
+    autoprefixer: {}
+  }
+}
+```
+
+### 2. PostCSS 配置语法错误 ⚠️ 
 
 #### 错误信息
 ```
@@ -20,7 +122,7 @@ PostCSS 配置文件必须使用 CommonJS 语法，不能使用 ES 模块语法�
 // ❌ 错误写法
 export default {
   plugins: {
-    tailwindcss: {},
+    '@tailwindcss/postcss': {},
     autoprefixer: {}
   }
 }
@@ -28,7 +130,7 @@ export default {
 // ✅ 正确写法  
 module.exports = {
   plugins: {
-    tailwindcss: {},
+    '@tailwindcss/postcss': {},
     autoprefixer: {}
   }
 }

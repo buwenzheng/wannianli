@@ -1,0 +1,170 @@
+# Tailwind CSS v4 迁移完整指南
+
+## 迁移检查清单
+
+### ✅ 已完成的迁移
+
+#### 1. **导入语法更新**
+```css
+/* ❌ v3语法 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ✅ v4语法 */
+@import 'tailwindcss';
+```
+
+#### 2. **主题配置迁移**
+所有主题配置从 `tailwind.config.js` 迁移到 CSS 的 `@theme` 指令：
+
+```css
+@theme {
+  /* 字体配置 */
+  --font-chinese: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', ui-sans-serif, system-ui, sans-serif;
+  
+  /* 间距配置 */
+  --spacing-calendar: 2.5rem;
+  
+  /* 网格配置 */
+  --grid-template-columns-calendar: repeat(7, 1fr);
+  
+  /* 万年历主题色彩 */
+  --color-primary-50: #fef2f2;
+  --color-primary-100: #fee2e2;
+  --color-primary-200: #fecaca;
+  --color-primary-500: #ef4444;
+  --color-primary-600: #dc2626;
+  --color-primary-700: #b91c1c;
+  --color-primary-900: #7f1d1d;
+  
+  /* 农历主题色彩 */
+  --color-lunar-50: #fff7ed;
+  --color-lunar-100: #ffedd5;
+  --color-lunar-400: #fb923c;
+  --color-lunar-500: #f97316;
+  --color-lunar-600: #ea580c;
+  --color-lunar-700: #c2410c;
+}
+```
+
+#### 3. **PostCSS配置更新**
+```javascript
+// postcss.config.js
+module.exports = {
+  plugins: {
+    '@tailwindcss/postcss': {},  // v4新插件
+    autoprefixer: {}
+  }
+}
+```
+
+#### 4. **配置文件清理**
+```javascript
+// tailwind.config.js - 大幅简化
+module.exports = {
+  content: ['./src/renderer/index.html', './src/renderer/src/**/*.{js,ts,jsx,tsx}'],
+  // Tailwind CSS v4: 所有主题配置已移至CSS的@theme指令中
+  plugins: [
+    require('@tailwindcss/forms')
+  ],
+  darkMode: 'class'
+}
+```
+
+### 📋 **v4迁移对照表**
+
+| 配置类型 | v3位置 | v4位置 | 示例 |
+|---------|--------|--------|------|
+| 字体 | `theme.fontFamily` | `--font-*` | `--font-chinese: ...` |
+| 颜色 | `theme.colors` | `--color-*` | `--color-primary-500: #ef4444` |
+| 间距 | `theme.spacing` | `--spacing-*` | `--spacing-calendar: 2.5rem` |
+| 网格 | `theme.gridTemplateColumns` | `--grid-template-columns-*` | `--grid-template-columns-calendar: repeat(7, 1fr)` |
+| 断点 | `theme.screens` | `--breakpoint-*` | `--breakpoint-3xl: 120rem` |
+
+### 🎯 **可用的工具类**
+
+经过完整迁移后，以下自定义工具类可正常使用：
+
+#### 字体类
+- `font-chinese` - 中文字体优化
+
+#### 颜色类
+- `bg-primary-50` 到 `bg-primary-900`
+- `text-primary-50` 到 `text-primary-900`
+- `border-primary-50` 到 `border-primary-900`
+- `bg-lunar-50` 到 `bg-lunar-700`
+- `text-lunar-50` 到 `text-lunar-700`
+
+#### 布局类
+- `grid-cols-calendar` - 7列日历网格
+- `h-calendar` - 日历单元格高度
+
+### 🚨 **常见错误和解决方案**
+
+#### 错误1：自定义工具类无法识别
+```
+Error: Cannot apply unknown utility class `font-chinese`
+Error: Cannot apply unknown utility class `bg-primary-500`
+Error: Cannot apply unknown utility class `grid-cols-calendar`
+```
+
+**解决方案**：确保所有自定义配置都在 `@theme` 中定义
+
+#### 错误2：PostCSS插件错误
+```
+PostCSS plugin has moved to a separate package
+```
+
+**解决方案**：
+```bash
+npm install @tailwindcss/postcss --save-dev
+```
+
+### 🔧 **迁移步骤**
+
+#### 步骤1：安装v4依赖
+```bash
+npm install @tailwindcss/postcss --save-dev
+```
+
+#### 步骤2：更新CSS文件
+```css
+@import 'tailwindcss';
+
+@theme {
+  /* 将所有自定义配置迁移到这里 */
+}
+```
+
+#### 步骤3：更新PostCSS配置
+```javascript
+module.exports = {
+  plugins: {
+    '@tailwindcss/postcss': {},
+    autoprefixer: {}
+  }
+}
+```
+
+#### 步骤4：清理配置文件
+从 `tailwind.config.js` 中移除所有 `theme.extend` 配置
+
+#### 步骤5：测试验证
+```bash
+npm run dev
+```
+
+### 💡 **最佳实践**
+
+1. **渐进式迁移**：一次迁移一个配置类型
+2. **保留备份**：迁移前备份原始配置
+3. **全面测试**：确保所有自定义工具类正常工作
+4. **文档更新**：及时更新团队开发文档
+
+### 🎉 **迁移完成验证**
+
+- ✅ 开发服务器正常启动
+- ✅ 自定义工具类正常工作
+- ✅ 代码质量检查通过
+- ✅ 无Tailwind CSS相关错误

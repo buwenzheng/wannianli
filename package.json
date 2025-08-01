@@ -11,6 +11,8 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "check-all": "npm run format && npm run lint && npm run typecheck",
+    "fix": "npm run format && npm run lint -- --fix",
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
     "build": "npm run typecheck && electron-vite build",
@@ -24,9 +26,11 @@
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "axios": "^1.11.0",
+    "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "electron-store": "^10.1.0",
     "electron-updater": "^6.3.9",
+    "lucide-react": "^0.535.0",
     "lunar-javascript": "^1.7.3"
   },
   "devDependencies": {
@@ -34,6 +38,7 @@
     "@electron-toolkit/eslint-config-ts": "^3.0.0",
     "@electron-toolkit/tsconfig": "^1.0.1",
     "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/postcss": "^4.1.11",
     "@types/node": "^22.16.5",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",

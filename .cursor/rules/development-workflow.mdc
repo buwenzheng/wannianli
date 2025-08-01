@@ -1,0 +1,244 @@
+# 开发工作流程规范
+
+## 代码提交前检查流程
+
+### 🔄 自动化检查命令
+
+#### 完整检查流程
+```bash
+# 1. 代码格式化
+npm run format
+
+# 2. 代码质量检查
+npm run lint
+
+# 3. TypeScript类型检查
+npm run typecheck
+
+# 4. 所有检查一键执行
+npm run check-all
+```
+
+#### 新增脚本建议
+在 `package.json` 中添加：
+```json
+{
+  "scripts": {
+    "check-all": "npm run format && npm run lint && npm run typecheck",
+    "fix": "npm run format && npm run lint -- --fix",
+    "pre-commit": "npm run check-all && npm test"
+  }
+}
+```
+
+### ✅ 代码风格检查清单
+
+#### TypeScript代码检查
+- [ ] 所有函数都有明确的返回类型
+- [ ] 没有使用 `any` 类型
+- [ ] 接口定义使用无分号格式
+- [ ] 变量命名使用 camelCase
+- [ ] 组件命名使用 PascalCase
+- [ ] 导入语句按类型分组
+
+#### React组件检查
+- [ ] 组件函数有明确的 `React.JSX.Element` 返回类型
+- [ ] 事件处理函数有 `void` 返回类型
+- [ ] Props接口定义清晰
+- [ ] 使用正确的Hook类型
+
+#### 代码格式检查
+- [ ] 无分号（除必要情况）
+- [ ] 单引号字符串
+- [ ] 无尾随逗号
+- [ ] 一致的缩进（2空格）
+
+### 🚀 AI编程助手使用指南
+
+#### 给AI的明确指令模板
+当请求AI编写代码时，使用以下模板：
+
+```
+请按照以下规范编写代码：
+
+1. TypeScript风格：
+   - 所有函数必须明确返回类型
+   - 禁用分号（除必要情况）
+   - 接口定义无分号格式
+   - 禁用any类型
+
+2. React组件：
+   - 组件返回类型：React.JSX.Element
+   - 事件处理返回类型：void
+   - 使用函数组件 + Hooks
+
+3. 命名规范：
+   - 变量/函数：camelCase
+   - 组件/类型：PascalCase
+   - 常量：UPPER_SNAKE_CASE
+
+4. 导入顺序：
+   - React相关
+   - 第三方库
+   - 项目内部模块
+
+请生成符合这些规范的代码。
+```
+
+#### 常见AI生成代码问题修正
+
+##### 1. 缺少函数返回类型
+```typescript
+// ❌ AI可能生成
+const handleClick = (id: string) => {
+  console.log(id)
+}
+
+// ✅ 修正为
+const handleClick = (id: string): void => {
+  console.log(id)
+}
+```
+
+##### 2. 使用分号
+```typescript
+// ❌ AI可能生成
+interface Props {
+  name: string;
+  age: number;
+}
+
+// ✅ 修正为
+interface Props {
+  name: string
+  age: number
+}
+```
+
+##### 3. React组件返回类型
+```typescript
+// ❌ AI可能生成
+const Component = () => {
+  return <div>Hello</div>
+}
+
+// ✅ 修正为
+const Component = (): React.JSX.Element => {
+  return <div>Hello</div>
+}
+```
+
+### 📋 开发环境配置检查
+
+#### VS Code 配置
+确保 `.vscode/settings.json` 包含：
+```json
+{
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "typescript.preferences.includePackageJsonAutoImports": "on",
+  "eslint.validate": [
+    "typescript",
+    "typescriptreact"
+  ]
+}
+```
+
+#### 推荐的VS Code扩展
+- ESLint
+- Prettier
+- TypeScript Importer
+- Auto Rename Tag
+- Bracket Pair Colorizer
+
+### 🔧 问题排查指南
+
+#### 常见ESLint错误及解决方案
+
+##### 1. 函数返回类型错误
+```
+error: Missing return type on function @typescript-eslint/explicit-function-return-type
+```
+**解决方案**：为所有函数添加明确的返回类型
+
+##### 2. 分号错误
+```
+error: Extra semicolon @typescript-eslint/semi
+```
+**解决方案**：移除不必要的分号
+
+##### 3. any类型错误
+```
+error: Unexpected any. Specify a different type @typescript-eslint/no-explicit-any
+```
+**解决方案**：使用具体的类型替代any
+
+#### 格式化问题解决
+```bash
+# 强制重新格式化所有文件
+npm run format
+
+# 清除ESLint缓存
+npx eslint --cache --cache-location .eslintcache --ext .ts,.tsx src/
+
+# 重置配置
+rm -rf node_modules/.cache
+```
+
+### 📝 代码审查指南
+
+#### 审查重点
+1. **类型安全**：检查所有类型定义是否正确
+2. **命名规范**：确保命名符合项目规范
+3. **代码风格**：使用自动化工具检查
+4. **性能考虑**：检查React组件的优化
+5. **错误处理**：确保有适当的错误处理
+
+#### 审查流程
+```bash
+# 审查前检查
+git diff --name-only | xargs npm run lint --
+git diff --name-only | xargs npm run typecheck --
+
+# 提交前最终检查
+npm run check-all
+```
+
+### 🎯 最佳实践总结
+
+#### 1. 始终明确类型
+```typescript
+// ✅ 好的做法
+const processData = (data: UserData[]): ProcessedResult => {
+  return data.map(transformUser)
+}
+
+// ❌ 避免的做法
+const processData = (data) => {
+  return data.map(transformUser)
+}
+```
+
+#### 2. 使用类型守卫
+```typescript
+// ✅ 类型安全的检查
+function isValidDate(date: unknown): date is Date {
+  return date instanceof Date && !isNaN(date.getTime())
+}
+```
+
+#### 3. 优化React组件
+```typescript
+// ✅ 使用memo和callback优化
+const CalendarDay = memo(({ date, onClick }: CalendarDayProps): React.JSX.Element => {
+  const handleClick = useCallback((): void => {
+    onClick(date)
+  }, [date, onClick])
+
+  return <div onClick={handleClick}>{date.getDate()}</div>
+})
+```
+
+记住：**代码规范的目标是提高代码质量和团队协作效率，而不是增加开发负担**。通过自动化工具和清晰的指南，我们可以在保持高质量的同时提高开发速度。

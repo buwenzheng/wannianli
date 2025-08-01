@@ -1,0 +1,267 @@
+# 图标使用规范
+
+## 图标方案选择
+
+### 🎯 **选用 Lucide React**
+
+项目采用 **Lucide React** 作为主要图标库，理由如下：
+
+1. **现代化设计**：简洁、一致的线性图标风格
+2. **TypeScript原生支持**：完整的类型定义
+3. **轻量级**：Tree-shaking友好，按需加载
+4. **丰富图标库**：1000+ 高质量图标
+5. **与Tailwind CSS完美集成**
+
+## 组件架构
+
+### 📦 **核心组件**
+
+#### 1. Icon 组件
+- **路径**：`src/renderer/src/components/ui/Icon.tsx`
+- **功能**：基础图标显示，支持大小、颜色预设
+- **特性**：
+  - 5种预设大小：`xs | sm | md | lg | xl`
+  - 7种预设颜色：`default | primary | secondary | success | warning | danger | muted`
+  - 支持自定义类名
+  - 可点击状态支持
+
+#### 2. IconButton 组件
+- **路径**：`src/renderer/src/components/ui/IconButton.tsx`
+- **功能**：预设样式的图标按钮
+- **特性**：
+  - 5种按钮变体：`default | primary | secondary | ghost | danger`
+  - 3种按钮大小：`sm | md | lg`
+  - 自动适配图标大小
+  - 完整的 HTML button 属性支持
+
+#### 3. 图标常量
+- **路径**：`src/renderer/src/constants/icons.ts`
+- **功能**：项目所需图标的统一管理
+- **分类**：
+  - `navigation` - 导航类图标
+  - `calendar` - 日历类图标
+  - `status` - 状态类图标
+  - `system` - 系统类图标
+  - `lunar` - 农历/节日类图标
+  - `action` - 功能类图标
+  - `feedback` - 信息类图标
+
+## 使用方法
+
+### 🔧 **基础图标使用**
+
+```tsx
+import { Icon } from '@components/ui'
+import { flatIcons } from '@constants/icons'
+
+// 基础使用
+<Icon icon={flatIcons.calendar} />
+
+// 指定大小和颜色
+<Icon 
+  icon={flatIcons.star} 
+  size="lg" 
+  color="primary" 
+/>
+
+// 可点击图标
+<Icon 
+  icon={flatIcons.settings} 
+  size="md" 
+  color="default"
+  clickable
+  onClick={handleSettingsClick}
+/>
+```
+
+### 🎛️ **图标按钮使用**
+
+```tsx
+import { IconButton } from '@components/ui'
+import { flatIcons } from '@constants/icons'
+
+// 基础按钮
+<IconButton icon={flatIcons.plus} />
+
+// 主要操作按钮
+<IconButton 
+  icon={flatIcons.save} 
+  variant="primary"
+  onClick={handleSave}
+/>
+
+// 危险操作按钮
+<IconButton 
+  icon={flatIcons.trash} 
+  variant="danger"
+  size="sm"
+  onClick={handleDelete}
+/>
+```
+
+### 📝 **分类图标使用**
+
+```tsx
+import { icons } from '@constants/icons'
+
+// 使用分类图标
+<Icon icon={icons.navigation.prev} />
+<Icon icon={icons.calendar.add} />
+<Icon icon={icons.lunar.moon} />
+```
+
+## 图标分类说明
+
+### 🧭 **导航类 (navigation)**
+- `prev` - 上一页/上个月
+- `next` - 下一页/下个月  
+- `home` - 首页
+- `calendar` - 日历主页
+- `settings` - 设置
+- `menu` - 菜单
+
+### 📅 **日历类 (calendar)**
+- `calendar` - 日历图标
+- `clock` - 时间
+- `reminder` - 提醒/闹钟
+- `add` - 添加事件
+- `edit` - 编辑事件
+- `delete` - 删除事件
+
+### ✅ **状态类 (status)**
+- `favorite` - 收藏/星标
+- `like` - 喜欢/点赞
+- `done` - 完成
+- `close` - 关闭
+
+### 🖥️ **系统类 (system)**
+- `minimize` - 最小化
+- `maximize` - 最大化
+- `fullscreen` - 全屏
+
+### 🌙 **农历/节日类 (lunar)**
+- `moon` - 月亮/农历
+- `sun` - 太阳/阳历
+- `festival` - 节日/礼物
+- `special` - 特殊日期
+
+### ⚡ **功能类 (action)**
+- `search` - 搜索
+- `filter` - 过滤
+- `download` - 下载
+- `upload` - 上传
+- `refresh` - 刷新
+
+### 💬 **信息类 (feedback)**
+- `info` - 信息
+- `warning` - 警告
+- `success` - 成功
+- `error` - 错误
+
+## 最佳实践
+
+### ✅ **推荐做法**
+
+1. **统一使用项目图标常量**
+   ```tsx
+   // ✅ 好的做法
+   import { flatIcons } from '@constants/icons'
+   <Icon icon={flatIcons.calendar} />
+   
+   // ❌ 避免直接导入
+   import { Calendar } from 'lucide-react'
+   <Calendar />
+   ```
+
+2. **合理选择组件**
+   ```tsx
+   // ✅ 纯展示用Icon组件
+   <Icon icon={flatIcons.star} color="warning" />
+   
+   // ✅ 可点击用IconButton组件
+   <IconButton icon={flatIcons.edit} onClick={handleEdit} />
+   ```
+
+3. **保持图标大小一致**
+   ```tsx
+   // ✅ 同一区域使用相同大小
+   <div className="toolbar">
+     <IconButton icon={flatIcons.add} size="md" />
+     <IconButton icon={flatIcons.edit} size="md" />
+     <IconButton icon={flatIcons.delete} size="md" />
+   </div>
+   ```
+
+4. **使用语义化的图标选择**
+   ```tsx
+   // ✅ 符合用户预期
+   <IconButton icon={flatIcons.trash} variant="danger" />
+   <IconButton icon={flatIcons.plus} variant="primary" />
+   ```
+
+### ❌ **避免的做法**
+
+1. **不要混用不同图标库**
+2. **不要在同一界面使用过多不同大小的图标**
+3. **不要使用颜色与功能不符的图标（如用红色表示成功）**
+4. **不要绕过封装组件直接使用原始图标**
+
+## 扩展指南
+
+### 🆕 **添加新图标**
+
+1. **在 `constants/icons.ts` 中添加**：
+   ```tsx
+   import { NewIcon } from 'lucide-react'
+   
+   export const flatIcons = {
+     // ... 现有图标
+     newIcon: NewIcon
+   }
+   ```
+
+2. **按分类添加**：
+   ```tsx
+   export const icons = {
+     calendar: {
+       // ... 现有图标
+       newAction: NewIcon
+     }
+   }
+   ```
+
+### 🎨 **自定义样式**
+
+如需特殊样式，可以通过 className 传递：
+
+```tsx
+<Icon 
+  icon={flatIcons.calendar}
+  className="text-blue-500 hover:text-blue-600 transition-colors"
+/>
+```
+
+### 📱 **响应式图标**
+
+结合 Tailwind CSS 响应式类：
+
+```tsx
+<Icon 
+  icon={flatIcons.menu}
+  className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6"
+/>
+```
+
+## 性能考虑
+
+1. **Tree-shaking**：只导入使用的图标，打包体积最小化
+2. **类型安全**：TypeScript确保图标名称正确
+3. **缓存友好**：图标常量利于代码分割和缓存
+4. **渲染性能**：SVG图标性能优于字体图标
+
+## 维护指南
+
+1. **定期审查**：检查是否有未使用的图标常量
+2. **命名规范**：保持图标命名的一致性和语义化
+3. **文档更新**：添加新图标时更新此文档
+4. **版本兼容**：升级lucide-react时检查图标变更

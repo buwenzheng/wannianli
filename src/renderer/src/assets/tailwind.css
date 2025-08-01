@@ -1,6 +1,33 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme {
+  /* 字体配置 */
+  --font-chinese:
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', ui-sans-serif, system-ui, sans-serif;
+
+  /* 间距配置 */
+  --spacing-calendar: 2.5rem;
+
+  /* 网格配置 */
+  --grid-template-columns-calendar: repeat(7, 1fr);
+
+  /* 万年历主题色彩 */
+  --color-primary-50: #fef2f2;
+  --color-primary-100: #fee2e2;
+  --color-primary-200: #fecaca;
+  --color-primary-500: #ef4444;
+  --color-primary-600: #dc2626;
+  --color-primary-700: #b91c1c;
+  --color-primary-900: #7f1d1d;
+
+  /* 农历主题色彩 */
+  --color-lunar-50: #fff7ed;
+  --color-lunar-100: #ffedd5;
+  --color-lunar-400: #fb923c;
+  --color-lunar-500: #f97316;
+  --color-lunar-600: #ea580c;
+  --color-lunar-700: #c2410c;
+}
 
 /* 万年历自定义样式 */
 @layer base {

@@ -1,4 +1,8 @@
-singleQuote: true
-semi: false
-printWidth: 100
-trailingComma: none
+semi: false # 无分号（匹配项目风格）
+singleQuote: true # 单引号
+tabWidth: 2 # 2空格缩进
+trailingComma: 'none' # 无尾随逗号（匹配接口定义风格）
+printWidth: 100 # 行长度限制
+bracketSpacing: true # 对象括号空格 { foo: bar }
+arrowParens: 'always' # 箭头函数参数括号 (x) => x
+endOfLine: 'lf' # 换行符

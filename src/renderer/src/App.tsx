@@ -1,49 +1,74 @@
+import { useState } from 'react'
+import { Calendar } from './components/Calendar'
 import Versions from './components/Versions'
-import electronLogo from './assets/electron.svg'
 
 function App(): React.JSX.Element {
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+
+  const handleDateSelect = (date: Date): void => {
+    setSelectedDate(date)
+    console.log('选择的日期:', date)
+  }
+
+  const handleMonthChange = (date: Date): void => {
+    console.log('月份变化:', date)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-8">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center">
-        <img alt="logo" src={electronLogo} className="w-20 h-20 mx-auto mb-6 animate-spin" />
-
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">万年历应用</h1>
-
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
-          使用 <span className="text-blue-600 font-semibold">React</span>
-          &nbsp;和 <span className="text-blue-800 font-semibold">TypeScript</span> 构建
-        </p>
-
-        <div className="space-y-4">
-          <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg p-4">
-            <p className="text-primary-700 dark:text-primary-300 text-sm">
-              按 <kbd className="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-xs">F12</kbd>{' '}
-              打开开发者工具
-            </p>
-          </div>
-
-          <div className="flex gap-4">
-            <a
-              href="https://electron-vite.org/"
-              target="_blank"
-              rel="noreferrer"
-              className="flex-1 bg-primary-500 hover:bg-primary-600 text-white py-2 px-4 rounded-md transition-colors duration-200"
-            >
-              文档
-            </a>
-            <button
-              onClick={ipcHandle}
-              className="flex-1 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 py-2 px-4 rounded-md transition-colors duration-200 text-gray-700 dark:text-gray-300"
-            >
-              发送 IPC
-            </button>
-          </div>
+      <div className="w-full max-w-4xl">
+        {/* 应用标题 */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">万年历应用</h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            基于 React + TypeScript + Electron 构建的现代万年历
+          </p>
         </div>
 
-        <div className="mt-8">
-          <Versions />
+        {/* 主要内容区域 */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* 日历组件 */}
+          <div className="lg:col-span-2">
+            <Calendar
+              onDateSelect={handleDateSelect}
+              onMonthChange={handleMonthChange}
+              showLunar={true}
+            />
+          </div>
+
+          {/* 侧边栏信息 */}
+          <div className="space-y-6">
+            {/* 选中日期信息 */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                日期信息
+              </h3>
+              {selectedDate ? (
+                <div className="space-y-2">
+                  <p className="text-gray-600 dark:text-gray-400">
+                    公历: {selectedDate.toLocaleDateString('zh-CN')}
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    星期: {['日', '一', '二', '三', '四', '五', '六'][selectedDate.getDay()]}
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-400">农历: 暂未集成</p>
+                </div>
+              ) : (
+                <p className="text-gray-500 dark:text-gray-500">请选择一个日期</p>
+              )}
+            </div>
+
+            {/* 开发信息 */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                开发信息
+              </h3>
+              <div className="space-y-2">
+                <p className="text-xs text-gray-500 dark:text-gray-500">按 F12 打开开发者工具</p>
+                <Versions />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -1,0 +1,438 @@
+# TypeScript 代码格式规范
+
+## 项目代码风格概述
+
+万年历项目采用现代化的TypeScript代码风格，强调简洁性和可读性。
+
+### 核心原则
+- ✅ **无分号风格** - 除必要情况外不使用分号
+- ✅ **类型明确** - 所有函数必须明确返回类型
+- ✅ **格式一致** - 使用Prettier自动格式化
+- ✅ **命名规范** - 遵循TypeScript最佳实践
+
+## 函数返回类型规范
+
+### ⚠️ 强制要求：所有函数必须明确返回类型
+
+#### 1. React组件
+```typescript
+// ✅ 正确 - 明确返回类型
+const Calendar: React.FC<CalendarProps> = ({ onDateSelect }): React.JSX.Element => {
+  return <div>...</div>
+}
+
+// ✅ 正确 - 函数组件
+function App(): React.JSX.Element {
+  return <div>...</div>
+}
+
+// ❌ 错误 - 缺少返回类型
+const Calendar = ({ onDateSelect }) => {
+  return <div>...</div>
+}
+```
+
+#### 2. 事件处理函数
+```typescript
+// ✅ 正确 - 明确void返回类型
+const handleDateSelect = (date: Date): void => {
+  setSelectedDate(date)
+  console.log('选择的日期:', date)
+}
+
+// ✅ 正确 - 带返回值的函数
+const formatDate = (date: Date): string => {
+  return dayjs(date).format('YYYY-MM-DD')
+}
+
+// ❌ 错误 - 缺少返回类型
+const handleDateSelect = (date: Date) => {
+  setSelectedDate(date)
+}
+```
+
+#### 3. 工具函数
+```typescript
+// ✅ 正确 - 明确返回类型
+export function getCalendarDates(date: Date): Date[] {
+  const currentMonth = dayjs(date)
+  return dates
+}
+
+// ✅ 正确 - 布尔返回值
+export function isToday(date: Date): boolean {
+  return dayjs(date).isSame(dayjs(), 'day')
+}
+
+// ✅ 正确 - 泛型函数
+export function cn(...inputs: ClassValue[]): string {
+  return clsx(inputs)
+}
+```
+
+#### 4. Hook函数
+```typescript
+// ✅ 正确 - 明确Hook返回类型
+export function useCalendar({
+  initialDate = new Date(),
+  events = [],
+  showLunar = true
+}: UseCalendarProps = {}): UseCalendarReturn {
+  // Hook实现
+  return {
+    currentMonth,
+    selectedDate,
+    calendarDates,
+    goToPrevMonth,
+    goToNextMonth,
+    goToToday,
+    selectDate,
+    setCurrentMonth
+  }
+}
+```
+
+## 接口和类型定义规范
+
+### 1. 无分号风格
+```typescript
+// ✅ 正确 - 无分号接口定义
+export interface CalendarDate {
+  date: Date
+  day: number
+  isToday: boolean
+  isCurrentMonth: boolean
+  isSelected: boolean
+  lunarInfo?: {
+    lunarDate: string
+    festival?: string
+    solarTerm?: string
+  }
+  events?: CalendarEvent[]
+}
+
+// ❌ 错误 - 带分号（旧风格）
+export interface CalendarDate {
+  date: Date;
+  day: number;
+  isToday: boolean;
+}
+```
+
+### 2. 函数类型定义
+```typescript
+// ✅ 正确 - 无分号函数类型
+export interface CalendarProps {
+  currentDate?: Date
+  selectedDate?: Date
+  onDateSelect?: (date: Date) => void
+  onMonthChange?: (date: Date) => void
+  showLunar?: boolean
+  events?: CalendarEvent[]
+}
+
+// ✅ 正确 - 复杂函数类型
+type EventHandler<T> = (event: T) => void
+type AsyncDataFetcher<T> = (id: string) => Promise<T>
+```
+
+## JSX/TSX 格式规范
+
+### 1. 组件属性格式
+```typescript
+// ✅ 正确 - 简洁的单行属性
+<Calendar onDateSelect={handleDateSelect} showLunar={true} />
+
+// ✅ 正确 - 多行属性（属性较多时）
+<Calendar
+  onDateSelect={handleDateSelect}
+  onMonthChange={handleMonthChange}
+  showLunar={true}
+  events={events}
+/>
+
+// ✅ 正确 - 条件渲染
+{dateInfo.lunarInfo?.festival && <div className="festival-dot" />}
+
+// ✅ 正确 - 紧凑的内容
+<span className="text-sm font-medium">{dateInfo.day}</span>
+```
+
+### 2. 循环渲染
+```typescript
+// ✅ 正确 - 箭头函数参数加括号
+{weekDays.map((day) => (
+  <div key={day} className="day-header">
+    {day}
+  </div>
+))}
+
+// ✅ 正确 - 复杂渲染逻辑
+{dates.map((dateInfo, index) => (
+  <div
+    key={index}
+    onClick={() => onDateClick(dateInfo.date)}
+    className={cn(
+      'calendar-cell',
+      dateInfo.isToday && 'today',
+      dateInfo.isSelected && 'selected'
+    )}
+  >
+    <span>{dateInfo.day}</span>
+  </div>
+))}
+```
+
+## 导入导出规范
+
+### 1. 导入语句
+```typescript
+// ✅ 正确 - 命名导入
+import { useState, useMemo } from 'react'
+import { CalendarDate, CalendarEvent } from '../types/calendar'
+
+// ✅ 正确 - 默认导入
+import dayjs from 'dayjs'
+import CalendarHeader from './CalendarHeader'
+
+// ✅ 正确 - 混合导入
+import React, { useState, useEffect } from 'react'
+
+// ✅ 正确 - 类型导入（仅类型）
+import type { CalendarProps } from '../types/calendar'
+```
+
+### 2. 导出语句
+```typescript
+// ✅ 正确 - 默认导出
+export default Calendar
+
+// ✅ 正确 - 命名导出
+export { Calendar, CalendarGrid, CalendarHeader }
+
+// ✅ 正确 - 类型导出
+export type { CalendarProps, CalendarDate, CalendarEvent, CalendarState }
+
+// ✅ 正确 - 重新导出
+export * from './Calendar'
+```
+
+## ESLint 配置要求
+
+### 必须启用的规则
+```javascript
+// eslint.config.mjs
+export default [
+  {
+    rules: {
+      // 强制函数返回类型
+      '@typescript-eslint/explicit-function-return-type': 'error',
+      
+      // 禁用分号
+      'semi': ['error', 'never'],
+      '@typescript-eslint/semi': ['error', 'never'],
+      
+      // 强制使用const
+      'prefer-const': 'error',
+      
+      // 禁用any类型
+      '@typescript-eslint/no-explicit-any': 'error',
+      
+      // 未使用变量警告
+      '@typescript-eslint/no-unused-vars': 'warn',
+      
+      // React相关
+      'react/jsx-uses-react': 'off', // React 17+
+      'react/react-in-jsx-scope': 'off', // React 17+
+    }
+  }
+]
+```
+
+## Prettier 配置要求
+
+### .prettierrc.yaml
+```yaml
+# 项目Prettier配置
+semi: false                 # 无分号
+singleQuote: true          # 单引号
+tabWidth: 2                # 2空格缩进
+trailingComma: 'none'      # 无尾随逗号
+printWidth: 100            # 行长度限制
+bracketSpacing: true       # 对象括号空格
+arrowParens: 'always'      # 箭头函数参数括号
+endOfLine: 'lf'           # 换行符
+```
+
+## 命名规范
+
+### 1. 变量和函数
+```typescript
+// ✅ 正确 - camelCase
+const selectedDate = new Date()
+const handleDateSelect = (date: Date): void => {}
+const isCurrentMonth = (date: Date): boolean => {}
+
+// ❌ 错误 - 其他格式
+const selected_date = new Date()
+const HandleDateSelect = () => {}
+```
+
+### 2. 常量
+```typescript
+// ✅ 正确 - UPPER_SNAKE_CASE
+const MAX_CALENDAR_WEEKS = 6
+const DEFAULT_LOCALE = 'zh-CN'
+
+// ✅ 正确 - 对象常量使用camelCase
+const calendarConfig = {
+  weekStartsOn: 0,
+  showWeekNumbers: false
+} as const
+```
+
+### 3. 组件和类型
+```typescript
+// ✅ 正确 - PascalCase
+interface CalendarProps {}
+type CalendarState = {}
+class DateUtils {}
+const Calendar: React.FC = () => {}
+
+// ✅ 正确 - 泛型
+interface ApiResponse<T> {}
+type EventHandler<TEvent> = (event: TEvent) => void
+```
+
+## 文件组织规范
+
+### 1. 文件内部结构
+```typescript
+// 1. 导入语句（按类型分组）
+import React, { useState, useMemo } from 'react'
+import dayjs from 'dayjs'
+
+import { CalendarDate } from '../types/calendar'
+import { getCalendarDates } from '../utils/dateUtils'
+import CalendarHeader from './CalendarHeader'
+
+// 2. 类型定义（如果是本地的）
+interface LocalComponentProps {
+  // ...
+}
+
+// 3. 常量定义
+const DEFAULT_VIEW_MODE = 'month'
+
+// 4. 主要组件或函数
+const Calendar: React.FC<CalendarProps> = (): React.JSX.Element => {
+  // ...
+}
+
+// 5. 默认导出
+export default Calendar
+```
+
+### 2. 注释规范
+```typescript
+/**
+ * 获取月份的所有日期（包括前后月份的填充日期）
+ * 生成日历网格需要的42个日期（6周 × 7天）
+ */
+export function getCalendarDates(date: Date): Date[] {
+  // 实现逻辑
+}
+
+/**
+ * 日历组件属性接口
+ */
+export interface CalendarProps {
+  /** 当前显示的日期 */
+  currentDate?: Date
+  /** 日期选择回调函数 */
+  onDateSelect?: (date: Date) => void
+}
+```
+
+## 错误处理规范
+
+### 1. 类型安全的错误处理
+```typescript
+// ✅ 正确 - 使用Result类型
+type Result<T> = 
+  | { success: true; data: T }
+  | { success: false; error: string }
+
+export function safeParseDate(dateString: string): Result<Date> {
+  try {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) {
+      return { success: false, error: 'Invalid date string' }
+    }
+    return { success: true, data: date }
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }
+  }
+}
+```
+
+## 性能优化规范
+
+### 1. React优化
+```typescript
+// ✅ 正确 - useMemo优化
+const calendarDates = useMemo((): CalendarDate[] => {
+  return getCalendarDates(currentMonth).map((date): CalendarDate => ({
+    date,
+    day: date.getDate(),
+    isToday: isToday(date),
+    isCurrentMonth: isCurrentMonth(date, currentMonth)
+  }))
+}, [currentMonth, selectedDate])
+
+// ✅ 正确 - useCallback优化
+const handleDateSelect = useCallback((date: Date): void => {
+  setSelectedDate(date)
+  onDateSelect?.(date)
+}, [onDateSelect])
+```
+
+## 开发工具配置
+
+### VS Code 设置建议
+```json
+{
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "typescript.preferences.includePackageJsonAutoImports": "on",
+  "typescript.suggest.autoImports": true
+}
+```
+
+## 代码审查检查清单
+
+### ✅ 提交前检查
+- [ ] 所有函数都有明确的返回类型
+- [ ] 没有使用分号（除非必要）
+- [ ] 接口定义使用无分号格式
+- [ ] 变量和函数使用camelCase命名
+- [ ] 组件和类型使用PascalCase命名
+- [ ] 导入语句按类型分组
+- [ ] 没有使用any类型
+- [ ] 所有异步函数都有适当的错误处理
+- [ ] React组件使用正确的类型定义
+
+### 🔧 自动化检查
+```bash
+# 运行检查命令
+npm run lint          # ESLint检查
+npm run format        # Prettier格式化
+npm run typecheck     # TypeScript类型检查
+```
+
+记住：**一致的代码风格比特定的风格选择更重要**。遵循这些规范可以确保整个团队的代码风格统一，减少代码审查中的格式争议。
