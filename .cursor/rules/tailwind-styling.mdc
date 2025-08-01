@@ -1,0 +1,186 @@
+# Tailwind CSS 样式规范
+
+## 为什么选择 Tailwind CSS
+
+### 优势分析
+- **轻量精准**: 只生成实际使用的CSS，减少应用体积
+- **设计自由**: 完全自定义的万年历界面，不受组件库限制
+- **性能优异**: Tree-shaking 支持，生产环境CSS极小
+- **响应式友好**: 内置响应式工具类，适配不同屏幕
+- **主题系统**: 完善的深色模式和主题定制支持
+- **原生感觉**: 更适合桌面应用的UI设计
+
+## 项目配置
+
+### Tailwind 配置文件 (tailwind.config.js)
+```javascript
+export default {
+  content: [
+    "./src/renderer/index.html",
+    "./src/renderer/src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        // 万年历主题色彩
+        primary: { /* 主色调 */ },
+        lunar: { /* 农历色彩 */ }
+      },
+      fontFamily: {
+        'chinese': ['PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'sans-serif'],
+      },
+      gridTemplateColumns: {
+        'calendar': 'repeat(7, 1fr)',
+      }
+    },
+  },
+  plugins: [
+    require('@tailwindcss/forms'),
+  ],
+  darkMode: 'class',
+}
+```
+
+## 样式规范
+
+### 1. 日历组件样式
+
+#### 日历网格
+```tsx
+<div className="calendar-grid">
+  {/* 7列网格布局 */}
+</div>
+```
+
+#### 日历单元格
+```tsx
+<div className="calendar-cell today">
+  <span className="text-sm">1</span>
+  <span className="lunar-info">初一</span>
+  <div className="festival-dot"></div>
+</div>
+```
+
+### 2. 颜色系统
+
+#### 主色调 (Primary)
+- `primary-50` - 最浅色，背景使用
+- `primary-500` - 主色，按钮和重点
+- `primary-700` - 深色，文字和边框
+
+#### 农历色调 (Lunar)
+- `lunar-500` - 农历信息主色
+- `lunar-600` - 农历文字色
+
+### 3. 响应式设计
+
+#### 断点使用
+```tsx
+// 移动端隐藏，桌面端显示
+<div className="hidden md:block">
+  详细信息
+</div>
+
+// 不同屏幕尺寸的日历大小
+<div className="h-8 w-8 md:h-calendar md:w-full">
+  日期
+</div>
+```
+
+### 4. 深色模式
+
+#### 实现方式
+```tsx
+// 根元素切换
+<html className={isDark ? 'dark' : ''}>
+
+// 组件中使用
+<div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+  内容
+</div>
+```
+
+### 5. 动画效果
+
+#### 常用动画类
+```tsx
+// 悬停效果
+<button className="hover:bg-gray-50 transition-colors duration-200">
+
+// 加载动画
+<div className="animate-pulse">
+
+// 淡入效果
+<div className="opacity-0 animate-fade-in">
+```
+
+## 组件样式指导
+
+### 1. 按钮样式
+```tsx
+// 主要按钮
+<button className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-md transition-colors">
+
+// 次要按钮  
+<button className="border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-md transition-colors">
+```
+
+### 2. 输入框样式
+```tsx
+<input className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
+```
+
+### 3. 卡片样式
+```tsx
+<div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+  卡片内容
+</div>
+```
+
+## 性能优化
+
+### 1. CSS 优化
+- 生产环境自动 purge 未使用的样式
+- 使用 `@apply` 指令复用常用样式组合
+- 避免动态类名，使用固定的 Tailwind 类
+
+### 2. 开发体验
+```tsx
+// ✅ 推荐：清晰的类名组织
+<div className={cn(
+  "calendar-cell",
+  isToday && "today", 
+  isSelected && "selected",
+  !isCurrentMonth && "other-month"
+)}>
+
+// ❌ 避免：过长的类名字符串
+<div className="flex items-center justify-center h-10 w-10 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer transition-colors duration-200 bg-primary-500 text-white font-semibold">
+```
+
+### 3. 类名工具函数
+```typescript
+import { clsx, type ClassValue } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+```
+
+## 最佳实践
+
+### 1. 组件设计
+- 优先使用 Tailwind 工具类
+- 复杂样式抽取为 CSS 组件类
+- 保持类名的语义化和可读性
+
+### 2. 主题一致性
+- 统一使用配置的色彩系统
+- 保持间距和尺寸的规律性
+- 确保深色模式的适配
+
+### 3. 可维护性
+- 使用 `@layer` 组织自定义样式
+- 抽取通用组件类到 `@layer components`
+- 文档化特殊样式的使用场景

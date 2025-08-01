@@ -7,7 +7,7 @@
 - **主框架**: Electron
 - **前端**: React 19 + TypeScript
 - **构建工具**: electron-vite
-- **UI组件**: Ant Design
+- **UI样式**: Tailwind CSS
 - **日期处理**: dayjs + lunar-javascript
 - **数据存储**: electron-store
 - **网络请求**: axios
@@ -124,6 +124,10 @@ features/calendar/
 - [tsconfig.json](mdc:tsconfig.json) - TypeScript配置
 - [eslint.config.mjs](mdc:eslint.config.mjs) - ESLint配置
 - [electron-builder.yml](mdc:electron-builder.yml) - 打包配置
+- [tailwind.config.js](mdc:tailwind.config.js) - Tailwind CSS配置
+- [postcss.config.js](mdc:postcss.config.js) - PostCSS配置
+
+⚠️ **重要**: 配置文件必须使用正确的模块语法，详见 [配置文件编写规范](mdc:.cursor/rules/config-files-standards.mdc)
 
 ## 命名规范
 
@@ -140,9 +144,19 @@ features/calendar/
 - **工具目录**: 使用 camelCase，如 `utils/`, `hooks/`
 
 ## 开发指导
+
+### 开发优先级
 1. 系统托盘和窗口管理
 2. 日历核心功能（农历、节日）
 3. 事件管理功能
 4. 数据存储和同步
 5. UI/UX 优化
 6. 系统集成（自启动、更新）
+
+### 关键规范文档
+- [配置文件编写规范](mdc:.cursor/rules/config-files-standards.mdc) - 避免模块语法错误 ⚠️
+- [Tailwind CSS 样式规范](mdc:.cursor/rules/tailwind-styling.mdc) - UI样式开发指导
+- [TypeScript 代码规范](mdc:.cursor/rules/typescript-standards.mdc) - 代码质量标准
+- [模块组织规范](mdc:.cursor/rules/module-organization.mdc) - 代码架构指导
+- [数据存储方案对比](mdc:.cursor/rules/data-storage-comparison.mdc) - 技术选型分析 📊
+- [常见问题排查指南](mdc:.cursor/rules/troubleshooting-guide.mdc) - 问题快速解决 🔧

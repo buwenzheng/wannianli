@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 万年历自定义样式 */
+@layer base {
+  /* 中文字体优化 */
+  body {
+    @apply font-chinese text-gray-900 bg-white;
+  }
+
+  /* 深色模式支持 */
+  .dark body {
+    @apply text-gray-100 bg-gray-900;
+  }
+}
+
+@layer components {
+  /* 日历网格样式 */
+  .calendar-grid {
+    @apply grid grid-cols-calendar gap-1 w-full;
+  }
+
+  /* 日历单元格 */
+  .calendar-cell {
+    @apply flex items-center justify-center h-calendar w-full
+           border border-gray-200 rounded hover:bg-gray-50
+           cursor-pointer transition-colors duration-200;
+  }
+
+  .calendar-cell.today {
+    @apply bg-primary-500 text-white font-semibold;
+  }
+
+  .calendar-cell.selected {
+    @apply bg-primary-100 border-primary-500 text-primary-700;
+  }
+
+  .calendar-cell.other-month {
+    @apply text-gray-400;
+  }
+
+  /* 深色模式日历样式 */
+  .dark .calendar-cell {
+    @apply border-gray-700 hover:bg-gray-800;
+  }
+
+  .dark .calendar-cell.selected {
+    @apply bg-primary-900 border-primary-600 text-primary-200;
+  }
+
+  /* 农历信息样式 */
+  .lunar-info {
+    @apply text-xs text-lunar-600 mt-0.5;
+  }
+
+  .dark .lunar-info {
+    @apply text-lunar-400;
+  }
+
+  /* 节日标记 */
+  .festival-dot {
+    @apply w-1.5 h-1.5 bg-red-500 rounded-full absolute top-1 right-1;
+  }
+
+  /* 事件标记 */
+  .event-dot {
+    @apply w-1.5 h-1.5 bg-blue-500 rounded-full absolute top-1 left-1;
+  }
+}
+
+@layer utilities {
+  /* 工具类 */
+  .calendar-shadow {
+    @apply shadow-lg shadow-gray-200/50;
+  }
+
+  .dark .calendar-shadow {
+    @apply shadow-gray-900/50;
+  }
+}

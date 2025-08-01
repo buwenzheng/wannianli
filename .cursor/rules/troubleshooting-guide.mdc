@@ -1,0 +1,353 @@
+# 常见问题排查指南
+
+## 构建和配置问题
+
+### 1. PostCSS 配置错误 ⚠️ 
+
+#### 错误信息
+```
+SyntaxError: Unexpected token 'export'
+/path/to/postcss.config.js:1
+export default {
+^^^^^^
+```
+
+#### 原因分析
+PostCSS 配置文件必须使用 CommonJS 语法，不能使用 ES 模块语法。
+
+#### 解决方案
+```javascript
+// ❌ 错误写法
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {}
+  }
+}
+
+// ✅ 正确写法  
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {}
+  }
+}
+```
+
+### 2. Tailwind 配置错误
+
+#### 错误信息
+```
+Error [ERR_REQUIRE_ESM]: require() of ES Module
+```
+
+#### 解决方案
+```javascript
+// tailwind.config.js - 使用 CommonJS
+module.exports = {
+  content: ['./src/**/*.{js,ts,jsx,tsx}'],
+  // ...
+}
+```
+
+### 3. TypeScript 类型检查失败
+
+#### 错误信息
+```
+TS2307: Cannot find module 'tailwindcss' or its corresponding type declarations.
+```
+
+#### 解决方案
+```bash
+# 安装类型定义
+npm install -D @types/tailwindcss
+
+# 或者在文件中添加类型注释
+/** @type {import('tailwindcss').Config} */
+```
+
+## 依赖包问题
+
+### 1. 包版本冲突
+
+#### 错误信息
+```
+npm warn EBADENGINE Unsupported engine
+```
+
+#### 解决方案
+```bash
+# 检查 Node.js 版本
+node --version
+
+# 更新到支持的版本，或忽略警告继续开发
+npm install --legacy-peer-deps
+```
+
+### 2. 缺失依赖
+
+#### 错误信息
+```
+Module not found: Can't resolve 'antd'
+```
+
+#### 解决方案
+```bash
+# 检查 package.json 中是否有该依赖
+npm list | grep antd
+
+# 安装缺失的依赖
+npm install antd
+```
+
+## 开发服务器问题
+
+### 1. 端口被占用
+
+#### 错误信息
+```
+Error: listen EADDRINUSE: address already in use :::5173
+```
+
+#### 解决方案
+```bash
+# 查找占用端口的进程
+lsof -i :5173
+
+# 杀死进程
+kill -9 <PID>
+
+# 或者使用不同端口
+npm run dev -- --port 5174
+```
+
+### 2. 热重载不工作
+
+#### 症状
+修改文件后页面不自动刷新
+
+#### 解决方案
+```bash
+# 检查文件监听
+ps aux | grep electron-vite
+
+# 重启开发服务器
+npm run dev
+```
+
+## Electron 特定问题
+
+### 1. 主进程错误
+
+#### 错误信息
+```
+App threw an error during load
+Error: Cannot find module './preload'
+```
+
+#### 解决方案
+```bash
+# 重新构建
+npm run build
+
+# 检查预加载脚本路径
+cat src/main/index.ts | grep preload
+```
+
+### 2. 渲染进程通信错误
+
+#### 错误信息
+```
+window.electron is undefined
+```
+
+#### 解决方案
+检查预加载脚本是否正确配置：
+```typescript
+// src/preload/index.ts
+import { contextBridge, ipcRenderer } from 'electron'
+
+contextBridge.exposeInMainWorld('electron', {
+  ipcRenderer: {
+    send: (channel: string, ...args: any[]) => ipcRenderer.send(channel, ...args),
+    // ...
+  }
+})
+```
+
+## 样式和 UI 问题
+
+### 1. Tailwind 样式不生效
+
+#### 症状
+Tailwind CSS 类名没有样式效果
+
+#### 排查步骤
+```bash
+# 1. 检查 Tailwind 配置文件
+cat tailwind.config.js
+
+# 2. 检查 CSS 导入
+grep -r "tailwind.css" src/
+
+# 3. 检查构建输出
+npm run build 2>&1 | grep -i tailwind
+```
+
+#### 解决方案
+```css
+/* 确保正确导入 Tailwind */
+@tailwind base;
+@tailwind components; 
+@tailwind utilities;
+```
+
+### 2. 深色模式不工作
+
+#### 解决方案
+```typescript
+// 检查 HTML 类名切换
+const toggleDarkMode = () => {
+  document.documentElement.classList.toggle('dark')
+}
+```
+
+## 打包和发布问题
+
+### 1. 图标不显示
+
+#### 错误信息
+```
+Error: Cannot find icon file
+```
+
+#### 解决方案
+```bash
+# 检查图标文件
+ls -la resources/
+
+# 更新 electron-builder 配置
+cat electron-builder.yml | grep icon
+```
+
+### 2. 代码签名失败
+
+#### 错误信息
+```
+Error: Application failed to sign
+```
+
+#### 解决方案
+```bash
+# macOS 检查证书
+security find-identity -v -p codesigning
+
+# 配置 electron-builder
+# electron-builder.yml
+mac:
+  identity: "Developer ID Application: Your Name"
+```
+
+## 调试技巧
+
+### 1. 开发工具
+
+#### 主进程调试
+```bash
+# 启用主进程调试
+DEBUG=electron:* npm run dev
+```
+
+#### 渲染进程调试
+```bash
+# 打开开发者工具
+按 F12 或 Cmd+Option+I
+```
+
+### 2. 日志输出
+
+#### 主进程日志
+```typescript
+// src/main/index.ts
+console.log('Main process log:', data)
+app.on('ready', () => {
+  console.log('App is ready')
+})
+```
+
+#### 渲染进程日志
+```typescript
+// src/renderer/src/App.tsx
+console.log('Renderer process log:', data)
+useEffect(() => {
+  console.log('Component mounted')
+}, [])
+```
+
+### 3. 网络问题
+
+#### 检查连接
+```bash
+# 测试开发服务器
+curl -I http://localhost:5173
+
+# 检查网络代理
+echo $HTTP_PROXY
+echo $HTTPS_PROXY
+```
+
+## 问题报告模板
+
+当遇到新问题时，请按以下格式记录：
+
+```markdown
+## 问题描述
+简短描述问题现象
+
+## 错误信息
+```
+完整的错误堆栈信息
+```
+
+## 重现步骤
+1. 第一步操作
+2. 第二步操作
+3. 出现错误
+
+## 环境信息
+- Node.js 版本: `node --version`
+- npm 版本: `npm --version`  
+- 操作系统: macOS/Windows/Linux
+- 项目版本: `cat package.json | grep version`
+
+## 解决方案
+记录解决步骤和方法
+```
+
+## 预防措施
+
+### 1. 代码审查检查点
+- [ ] 配置文件使用正确的模块语法
+- [ ] 依赖包版本兼容
+- [ ] 路径引用正确
+- [ ] 类型定义完整
+
+### 2. 自动化检查
+```json
+// package.json
+{
+  "scripts": {
+    "lint": "eslint --cache .",
+    "typecheck": "tsc --noEmit",
+    "test:config": "node -c tailwind.config.js && node -c postcss.config.js"
+  }
+}
+```
+
+### 3. 开发环境检查
+```bash
+# 定期运行完整检查
+npm run lint && npm run typecheck && npm run test:config
+```
+
+记住：**大多数问题都有现成的解决方案，遇到问题时先查看此指南！**

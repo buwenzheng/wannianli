@@ -1,0 +1,239 @@
+# 配置文件编写规范
+
+## 模块语法规范
+
+### 重要提醒 ⚠️
+**不同配置文件使用不同的模块语法，混用会导致运行时错误！**
+
+### 1. ES 模块语法 (ESM)
+使用 `export default` 或 `export` 的文件：
+
+#### 适用文件类型
+```
+✅ TypeScript 配置文件
+- electron.vite.config.ts
+- vite.config.ts  
+- vitest.config.ts
+
+✅ 现代 JavaScript 模块
+- 组件文件 (.tsx, .jsx)
+- 工具函数 (.ts, .js with type: module)
+```
+
+#### 语法示例
+```typescript
+// electron.vite.config.ts ✅
+import { defineConfig } from 'electron-vite'
+export default defineConfig({
+  // 配置内容
+})
+
+// utils/helpers.ts ✅  
+export function helper() { }
+export default class MyClass { }
+```
+
+### 2. CommonJS 语法 (CJS)
+使用 `module.exports` 或 `require()` 的文件：
+
+#### 适用文件类型
+```
+✅ Node.js 配置文件
+- tailwind.config.js
+- postcss.config.js
+- eslint.config.mjs (可选)
+- jest.config.js
+
+✅ 传统 Node.js 模块
+- 构建脚本
+- 服务器端代码（主进程）
+```
+
+#### 语法示例
+```javascript
+// tailwind.config.js ✅
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: ['./src/**/*.{js,ts,jsx,tsx}'],
+  theme: {
+    extend: {}
+  },
+  plugins: [
+    require('@tailwindcss/forms')
+  ]
+}
+
+// postcss.config.js ✅
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {}
+  }
+}
+```
+
+## 常见错误及修复
+
+### ❌ 错误示例 1：配置文件使用错误语法
+```javascript
+// postcss.config.js - 错误 ❌
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {}
+  }
+}
+// 错误原因：PostCSS 配置文件需要 CommonJS 语法
+```
+
+```javascript
+// postcss.config.js - 正确 ✅
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {}
+  }
+}
+```
+
+### ❌ 错误示例 2：require 在 ES 模块中
+```typescript
+// electron.vite.config.ts - 错误 ❌
+import { defineConfig } from 'electron-vite'
+const tailwindcss = require('tailwindcss')
+
+export default defineConfig({
+  // ...
+})
+// 错误原因：ES 模块中不能使用 require
+```
+
+```typescript
+// electron.vite.config.ts - 正确 ✅
+import { defineConfig } from 'electron-vite'
+import tailwindcss from 'tailwindcss'
+
+export default defineConfig({
+  // ...
+})
+```
+
+## 项目配置文件清单
+
+### ES 模块语法文件
+| 文件 | 语法 | 原因 |
+|------|------|------|
+| `electron.vite.config.ts` | `export default` | TypeScript 配置，Vite 要求 ESM |
+| `tsconfig.json` | JSON | 配置文件格式 |
+| `src/**/*.{ts,tsx}` | `export/import` | TypeScript 源码 |
+
+### CommonJS 语法文件  
+| 文件 | 语法 | 原因 |
+|------|------|------|
+| `tailwind.config.js` | `module.exports` | PostCSS 生态系统要求 CJS |
+| `postcss.config.js` | `module.exports` | PostCSS 配置文件标准 |
+| `eslint.config.mjs` | `module.exports` | ESLint 配置（可选 ESM）|
+
+## 识别方法
+
+### 1. 查看文件扩展名
+```
+.ts / .tsx / .mts  → 通常是 ESM
+.js / .cjs        → 通常是 CJS  
+.mjs             → 强制 ESM
+```
+
+### 2. 查看 package.json
+```json
+{
+  "type": "module"  // 整个项目默认 ESM
+}
+```
+
+### 3. 查看工具文档
+- **Vite 配置**: ESM 语法
+- **PostCSS 配置**: CJS 语法  
+- **Tailwind 配置**: CJS 语法
+- **ESLint 配置**: 两者皆可
+
+## 错误排查指南
+
+### 常见错误信息
+```bash
+# ES 模块错误
+SyntaxError: Unexpected token 'export'
+→ 文件需要使用 CommonJS 语法
+
+# CommonJS 错误  
+SyntaxError: Cannot use import statement outside a module
+→ 文件需要使用 ES 模块语法
+
+# require 错误
+Error: require() is not defined in ES module scope
+→ 在 ES 模块中使用了 require()
+```
+
+### 快速修复步骤
+1. **确认文件类型**：配置文件还是源码文件？
+2. **查看错误信息**：是 export 错误还是 import 错误？
+3. **选择正确语法**：
+   - 配置文件 → 通常用 `module.exports`
+   - 源码文件 → 通常用 `export default`
+4. **更新导入语法**：
+   - CJS: `const x = require('x')`
+   - ESM: `import x from 'x'`
+
+## 最佳实践
+
+### 1. 创建新配置文件时
+- 📖 **先查文档**：确认工具要求的模块语法
+- 🔍 **参考现有**：查看项目中类似文件的写法
+- ⚡ **测试运行**：创建后立即测试是否正常工作
+
+### 2. 代码审查检查点
+- ✅ 配置文件语法是否正确
+- ✅ import/require 是否匹配文件类型  
+- ✅ 是否有混用语法的情况
+
+### 3. 开发环境设置
+```json
+// package.json scripts
+{
+  "scripts": {
+    "lint:config": "node -c tailwind.config.js && node -c postcss.config.js",
+    "test:config": "npm run lint:config && npm run typecheck"
+  }
+}
+```
+
+## 工具配置模板
+
+### Tailwind 配置模板
+```javascript
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: ['./src/renderer/index.html', './src/renderer/src/**/*.{js,ts,jsx,tsx}'],
+  theme: {
+    extend: {
+      // 自定义主题
+    }
+  },
+  plugins: [
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require('@tailwindcss/forms')
+  ],
+  darkMode: 'class'
+}
+```
+
+### PostCSS 配置模板
+```javascript
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {}
+  }
+}
+```
+
+记住：**配置文件错误会导致整个构建过程失败，务必仔细检查模块语法！**
