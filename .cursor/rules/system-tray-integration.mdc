@@ -1,0 +1,631 @@
+# 系统托盘集成规范
+
+## 托盘功能概述
+
+万年历应用作为macOS系统托盘应用，需要提供轻量、便捷的日历查看体验。
+
+### 1. 核心功能要求
+- 点击托盘图标弹出日历界面
+- 显示当前日期作为托盘图标
+- 支持右键菜单功能
+- 无主窗口，完全基于托盘操作
+
+## Electron 主进程实现
+
+### 1. 托盘创建和管理
+```typescript
+import { app, Tray, Menu, BrowserWindow, nativeImage } from 'electron';
+import path from 'path';
+
+class TrayManager {
+  private tray: Tray | null = null;
+  private popoverWindow: BrowserWindow | null = null;
+
+  constructor() {
+    this.createTray();
+    this.createPopoverWindow();
+  }
+
+  private createTray(): void {
+    // 创建托盘图标
+    const iconPath = this.createDateIcon();
+    this.tray = new Tray(iconPath);
+    
+    // 设置托盘提示
+    this.tray.setToolTip('Cursor 万年历');
+    
+    // 绑定点击事件
+    this.tray.on('click', () => {
+      this.togglePopover();
+    });
+
+    // 绑定右键菜单
+    this.tray.on('right-click', () => {
+      this.showContextMenu();
+    });
+
+    // 定时更新图标（每分钟检查一次日期变化）
+    setInterval(() => {
+      this.updateTrayIcon();
+    }, 60000);
+  }
+
+  private createDateIcon(): string {
+    const today = new Date();
+    const date = today.getDate();
+    
+    // 创建动态日期图标
+    return this.generateDateIcon(date);
+  }
+
+  private generateDateIcon(date: number): string {
+    // 使用 Canvas 或者预生成的图标
+    // 这里需要生成一个显示当前日期的图标
+    const canvas = document.createElement('canvas');
+    canvas.width = 16;
+    canvas.height = 16;
+    
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      // 绘制日期图标
+      ctx.fillStyle = '#3B82F6';
+      ctx.fillRect(0, 0, 16, 16);
+      
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '10px -apple-system';
+      ctx.textAlign = 'center';
+      ctx.fillText(date.toString(), 8, 12);
+    }
+    
+    return canvas.toDataURL();
+  }
+
+  private createPopoverWindow(): void {
+    this.popoverWindow = new BrowserWindow({
+      width: 420,
+      height: 520,
+      show: false,
+      frame: false,
+      alwaysOnTop: true,
+      skipTaskbar: true,
+      resizable: false,
+      transparent: true,
+      vibrancy: 'under-window', // macOS 毛玻璃效果
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        preload: path.join(__dirname, '../preload/index.js')
+      }
+    });
+
+    // 失去焦点时隐藏窗口
+    this.popoverWindow.on('blur', () => {
+      if (this.popoverWindow && this.popoverWindow.isVisible()) {
+        this.popoverWindow.hide();
+      }
+    });
+
+    // 加载渲染进程
+    if (process.env.NODE_ENV === 'development') {
+      this.popoverWindow.loadURL('http://localhost:3000');
+    } else {
+      this.popoverWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+    }
+  }
+
+  private togglePopover(): void {
+    if (!this.popoverWindow) return;
+
+    if (this.popoverWindow.isVisible()) {
+      this.popoverWindow.hide();
+    } else {
+      this.showPopover();
+    }
+  }
+
+  private showPopover(): void {
+    if (!this.popoverWindow || !this.tray) return;
+
+    // 获取托盘图标位置
+    const trayBounds = this.tray.getBounds();
+    const windowBounds = this.popoverWindow.getBounds();
+
+    // 计算弹窗位置（在托盘图标下方居中）
+    const x = Math.round(trayBounds.x + (trayBounds.width / 2) - (windowBounds.width / 2));
+    const y = Math.round(trayBounds.y + trayBounds.height + 4);
+
+    this.popoverWindow.setPosition(x, y, false);
+    this.popoverWindow.show();
+    this.popoverWindow.focus();
+  }
+
+  private showContextMenu(): void {
+    if (!this.tray) return;
+
+    const contextMenu = Menu.buildFromTemplate([
+      {
+        label: '打开日历',
+        click: () => {
+          this.showPopover();
+        }
+      },
+      {
+        type: 'separator'
+      },
+      {
+        label: '设置',
+        click: () => {
+          // 打开设置窗口
+          this.openSettings();
+        }
+      },
+      {
+        label: '关于',
+        click: () => {
+          // 显示关于信息
+          this.showAbout();
+        }
+      },
+      {
+        type: 'separator'
+      },
+      {
+        label: '退出',
+        accelerator: 'Command+Q',
+        click: () => {
+          app.quit();
+        }
+      }
+    ]);
+
+    this.tray.popUpContextMenu(contextMenu);
+  }
+
+  private updateTrayIcon(): void {
+    if (!this.tray) return;
+    
+    const iconPath = this.createDateIcon();
+    this.tray.setImage(iconPath);
+  }
+
+  private openSettings(): void {
+    // 创建设置窗口
+    const settingsWindow = new BrowserWindow({
+      width: 600,
+      height: 400,
+      title: '万年历设置',
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        preload: path.join(__dirname, '../preload/index.js')
+      }
+    });
+
+    settingsWindow.loadFile(path.join(__dirname, '../renderer/settings.html'));
+    settingsWindow.show();
+  }
+
+  private showAbout(): void {
+    // 显示关于对话框
+    const { dialog } = require('electron');
+    
+    dialog.showMessageBox({
+      type: 'info',
+      title: '关于 Cursor 万年历',
+      message: 'Cursor 万年历',
+      detail: '版本 1.0.0\n一个现代化的 macOS 万年历应用',
+      buttons: ['确定']
+    });
+  }
+
+  public destroy(): void {
+    if (this.tray) {
+      this.tray.destroy();
+      this.tray = null;
+    }
+    
+    if (this.popoverWindow) {
+      this.popoverWindow.close();
+      this.popoverWindow = null;
+    }
+  }
+}
+
+export default TrayManager;
+```
+
+### 2. 应用生命周期管理
+```typescript
+import { app, BrowserWindow } from 'electron';
+import TrayManager from './tray';
+
+class App {
+  private trayManager: TrayManager | null = null;
+
+  constructor() {
+    this.initializeApp();
+  }
+
+  private initializeApp(): void {
+    // 防止多实例运行
+    const gotTheLock = app.requestSingleInstanceLock();
+    
+    if (!gotTheLock) {
+      app.quit();
+      return;
+    }
+
+    // 应用就绪后创建托盘
+    app.whenReady().then(() => {
+      this.createTray();
+      
+      // macOS 特殊处理：点击 dock 图标时重新创建托盘
+      app.on('activate', () => {
+        if (!this.trayManager) {
+          this.createTray();
+        }
+      });
+    });
+
+    // 隐藏 dock 图标（可选）
+    if (process.platform === 'darwin') {
+      app.dock?.hide();
+    }
+
+    // 窗口全部关闭时不退出应用（保持托盘运行）
+    app.on('window-all-closed', (e) => {
+      e.preventDefault();
+    });
+
+    // 应用退出前清理
+    app.on('before-quit', () => {
+      this.cleanup();
+    });
+  }
+
+  private createTray(): void {
+    this.trayManager = new TrayManager();
+  }
+
+  private cleanup(): void {
+    if (this.trayManager) {
+      this.trayManager.destroy();
+      this.trayManager = null;
+    }
+  }
+}
+
+new App();
+```
+
+## 弹窗定位算法
+
+### 1. 智能定位
+```typescript
+interface TrayBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface WindowBounds {
+  width: number;
+  height: number;
+}
+
+class PopoverPositioning {
+  static calculatePosition(
+    trayBounds: TrayBounds, 
+    windowBounds: WindowBounds,
+    screenBounds: { width: number; height: number }
+  ): { x: number; y: number } {
+    // 默认位置：托盘图标下方居中
+    let x = Math.round(trayBounds.x + (trayBounds.width / 2) - (windowBounds.width / 2));
+    let y = Math.round(trayBounds.y + trayBounds.height + 4);
+
+    // 边界检查和调整
+    
+    // 右边界检查
+    if (x + windowBounds.width > screenBounds.width) {
+      x = screenBounds.width - windowBounds.width - 10;
+    }
+    
+    // 左边界检查
+    if (x < 10) {
+      x = 10;
+    }
+    
+    // 下边界检查（如果空间不够，显示在上方）
+    if (y + windowBounds.height > screenBounds.height) {
+      y = trayBounds.y - windowBounds.height - 4;
+    }
+    
+    // 上边界检查
+    if (y < 10) {
+      y = 10;
+    }
+
+    return { x, y };
+  }
+}
+```
+
+### 2. 多屏支持
+```typescript
+import { screen } from 'electron';
+
+class MultiScreenSupport {
+  static getScreenForTray(trayBounds: TrayBounds) {
+    const displays = screen.getAllDisplays();
+    
+    // 找到包含托盘的屏幕
+    for (const display of displays) {
+      const { x, y, width, height } = display.bounds;
+      
+      if (trayBounds.x >= x && 
+          trayBounds.x <= x + width &&
+          trayBounds.y >= y && 
+          trayBounds.y <= y + height) {
+        return display;
+      }
+    }
+    
+    // 如果找不到，返回主屏幕
+    return screen.getPrimaryDisplay();
+  }
+}
+```
+
+## 自启动配置
+
+### 1. 开机自启动
+```typescript
+import { app } from 'electron';
+
+class AutoLauncher {
+  static setAutoLaunch(enable: boolean): void {
+    if (process.platform === 'darwin') {
+      app.setLoginItemSettings({
+        openAtLogin: enable,
+        openAsHidden: true // 启动时隐藏，只显示托盘图标
+      });
+    }
+  }
+
+  static getAutoLaunchStatus(): boolean {
+    if (process.platform === 'darwin') {
+      return app.getLoginItemSettings().openAtLogin;
+    }
+    return false;
+  }
+}
+```
+
+### 2. 用户设置集成
+```typescript
+import Store from 'electron-store';
+
+interface AppSettings {
+  autoLaunch: boolean;
+  showLunarCalendar: boolean;
+  theme: 'light' | 'dark' | 'auto';
+}
+
+class SettingsManager {
+  private store: Store<AppSettings>;
+
+  constructor() {
+    this.store = new Store<AppSettings>({
+      defaults: {
+        autoLaunch: false,
+        showLunarCalendar: true,
+        theme: 'auto'
+      }
+    });
+  }
+
+  getAutoLaunch(): boolean {
+    return this.store.get('autoLaunch');
+  }
+
+  setAutoLaunch(enable: boolean): void {
+    this.store.set('autoLaunch', enable);
+    AutoLauncher.setAutoLaunch(enable);
+  }
+
+  getSettings(): AppSettings {
+    return this.store.store;
+  }
+
+  updateSettings(settings: Partial<AppSettings>): void {
+    Object.keys(settings).forEach(key => {
+      this.store.set(key as keyof AppSettings, settings[key as keyof AppSettings]);
+    });
+
+    // 特殊处理自启动设置
+    if ('autoLaunch' in settings) {
+      AutoLauncher.setAutoLaunch(settings.autoLaunch!);
+    }
+  }
+}
+```
+
+## 性能优化
+
+### 1. 内存管理
+```typescript
+class MemoryManager {
+  private static instance: MemoryManager;
+  private cleanupInterval: NodeJS.Timeout | null = null;
+
+  private constructor() {
+    this.startMemoryCleanup();
+  }
+
+  static getInstance(): MemoryManager {
+    if (!MemoryManager.instance) {
+      MemoryManager.instance = new MemoryManager();
+    }
+    return MemoryManager.instance;
+  }
+
+  private startMemoryCleanup(): void {
+    // 每30分钟清理一次内存
+    this.cleanupInterval = setInterval(() => {
+      if (global.gc) {
+        global.gc();
+      }
+    }, 30 * 60 * 1000);
+  }
+
+  cleanup(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
+  }
+}
+```
+
+### 2. 资源优化
+```typescript
+class ResourceOptimizer {
+  // 预加载关键资源
+  static preloadResources(): void {
+    // 预加载农历计算库
+    // 预加载图标资源
+    // 预加载字体文件
+  }
+
+  // 延迟加载非关键功能
+  static lazyLoadFeatures(): void {
+    // 延迟加载设置界面
+    // 延迟加载事件管理功能
+  }
+}
+```
+
+## 调试和日志
+
+### 1. 日志系统
+```typescript
+import log from 'electron-log';
+
+class Logger {
+  static setupLogging(): void {
+    // 配置日志文件路径
+    log.transports.file.resolvePathFn = () => 
+      path.join(app.getPath('userData'), 'logs', 'main.log');
+
+    // 设置日志级别
+    log.transports.console.level = process.env.NODE_ENV === 'development' ? 'debug' : 'error';
+    log.transports.file.level = 'info';
+
+    // 捕获未处理的异常
+    process.on('uncaughtException', (error) => {
+      log.error('Uncaught Exception:', error);
+    });
+
+    process.on('unhandledRejection', (reason, promise) => {
+      log.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    });
+  }
+
+  static info(message: string, ...args: any[]): void {
+    log.info(message, ...args);
+  }
+
+  static error(message: string, ...args: any[]): void {
+    log.error(message, ...args);
+  }
+
+  static debug(message: string, ...args: any[]): void {
+    log.debug(message, ...args);
+  }
+}
+```
+
+### 2. 开发者工具
+```typescript
+class DevTools {
+  static setupDevTools(window: BrowserWindow): void {
+    if (process.env.NODE_ENV === 'development') {
+      window.webContents.openDevTools({ mode: 'detach' });
+      
+      // 安装React开发者工具
+      const { default: installExtension, REACT_DEVELOPER_TOOLS } = require('electron-devtools-installer');
+      
+      installExtension(REACT_DEVELOPER_TOOLS)
+        .then((name: string) => log.info(`Added Extension: ${name}`))
+        .catch((err: any) => log.error('An error occurred: ', err));
+    }
+  }
+}
+```
+
+## 安全考虑
+
+### 1. IPC 安全
+```typescript
+import { ipcMain } from 'electron';
+
+class SecureIPC {
+  static setupSecureChannels(): void {
+    // 只允许特定的IPC通道
+    const allowedChannels = [
+      'calendar:get-date',
+      'events:add',
+      'events:update',
+      'events:delete',
+      'settings:get',
+      'settings:update'
+    ];
+
+    ipcMain.handle('secure-invoke', (event, channel, ...args) => {
+      if (!allowedChannels.includes(channel)) {
+        throw new Error(`Unauthorized IPC channel: ${channel}`);
+      }
+      
+      // 处理具体的IPC请求
+      return this.handleIPCRequest(channel, ...args);
+    });
+  }
+
+  private static handleIPCRequest(channel: string, ...args: any[]): any {
+    switch (channel) {
+      case 'calendar:get-date':
+        return new Date();
+      // 其他处理...
+      default:
+        throw new Error(`Unknown channel: ${channel}`);
+    }
+  }
+}
+```
+
+### 2. 数据验证
+```typescript
+import Joi from 'joi';
+
+class DataValidator {
+  private static eventSchema = Joi.object({
+    title: Joi.string().min(1).max(100).required(),
+    description: Joi.string().max(500).optional(),
+    date: Joi.date().required(),
+    category: Joi.string().valid('personal', 'work', 'holiday', 'custom').required(),
+    repeatType: Joi.string().valid('none', 'yearly', 'monthly', 'weekly').required()
+  });
+
+  static validateEvent(data: any): { error?: string; value?: any } {
+    const { error, value } = this.eventSchema.validate(data);
+    
+    if (error) {
+      return { error: error.details[0].message };
+    }
+    
+    return { value };
+  }
+}
+```

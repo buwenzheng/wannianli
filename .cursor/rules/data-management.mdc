@@ -1,0 +1,893 @@
+# 数据管理规范
+
+## 数据架构概述
+
+万年历应用需要管理多种类型的数据：用户事件、假期信息、应用设置、农历数据等。
+
+### 1. 数据分类
+- **用户事件数据**: 个人创建的事件和节日
+- **假期数据**: 从在线源获取的官方假期安排
+- **应用设置**: 用户偏好和配置
+- **缓存数据**: 农历计算结果和临时数据
+
+## 数据存储策略
+
+### 1. 本地存储架构
+```typescript
+import Store from 'electron-store';
+import path from 'path';
+import { app } from 'electron';
+
+// 数据存储位置
+const DATA_PATH = app.getPath('userData');
+
+// 存储配置
+const STORE_CONFIG = {
+  userData: path.join(DATA_PATH, 'user-data.json'),
+  settings: path.join(DATA_PATH, 'settings.json'),
+  holidays: path.join(DATA_PATH, 'holidays.json'),
+  cache: path.join(DATA_PATH, 'cache.json')
+};
+```
+
+### 2. 数据模型定义
+```typescript
+// 用户事件数据模型
+export interface UserEvent {
+  id: string;
+  title: string;
+  description?: string;
+  date: string; // ISO 8601 格式
+  lunarDate?: string;
+  repeatType: 'none' | 'yearly' | 'monthly' | 'weekly';
+  isLunar: boolean; // 是否按农历重复
+  category: 'personal' | 'work' | 'holiday' | 'custom';
+  color?: string;
+  reminder: {
+    enabled: boolean;
+    time?: string; // ISO 8601 格式
+    notified?: boolean;
+  };
+  metadata: {
+    createdAt: string;
+    updatedAt: string;
+    version: number;
+  };
+}
+
+// 假期数据模型
+export interface Holiday {
+  date: string; // YYYY-MM-DD 格式
+  name: string;
+  type: 'holiday' | 'workday' | 'festival';
+  isOfficial: boolean; // 是否为官方假期
+  description?: string;
+  category: 'national' | 'traditional' | 'international';
+}
+
+// 应用设置模型
+export interface AppSettings {
+  general: {
+    autoLaunch: boolean;
+    language: 'zh-CN' | 'en-US';
+    theme: 'light' | 'dark' | 'auto';
+    showLunarCalendar: boolean;
+  };
+  calendar: {
+    weekStartsOn: 0 | 1; // 0: 周日, 1: 周一
+    showWeekNumbers: boolean;
+    highlightToday: boolean;
+    showFestivals: boolean;
+    showSolarTerms: boolean;
+  };
+  events: {
+    defaultCategory: string;
+    defaultReminder: boolean;
+    defaultReminderTime: number; // 提前分钟数
+  };
+  data: {
+    lastHolidayUpdate: string;
+    autoUpdateHolidays: boolean;
+    dataBackup: boolean;
+    maxBackupFiles: number;
+  };
+}
+
+// 农历缓存数据模型
+export interface LunarCache {
+  [dateKey: string]: {
+    lunarDate: string;
+    lunarMonth: string;
+    lunarYear: string;
+    festivals: string[];
+    solarTerms: string[];
+    zodiac: string;
+    ganZhi: string;
+    cachedAt: string;
+  };
+}
+```
+
+## 数据访问层 (DAL)
+
+### 1. 基础存储管理器
+```typescript
+import Store from 'electron-store';
+import { promises as fs } from 'fs';
+import path from 'path';
+
+abstract class BaseDataManager<T> {
+  protected store: Store<T>;
+  protected backupPath: string;
+
+  constructor(storeOptions: Store.Options<T>, backupDir: string) {
+    this.store = new Store<T>(storeOptions);
+    this.backupPath = backupDir;
+    this.ensureBackupDirectory();
+  }
+
+  private async ensureBackupDirectory(): Promise<void> {
+    try {
+      await fs.mkdir(this.backupPath, { recursive: true });
+    } catch (error) {
+      console.error('Failed to create backup directory:', error);
+    }
+  }
+
+  // 数据备份
+  async backup(): Promise<string> {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupFile = path.join(this.backupPath, `backup-${timestamp}.json`);
+    
+    try {
+      const data = this.store.store;
+      await fs.writeFile(backupFile, JSON.stringify(data, null, 2));
+      return backupFile;
+    } catch (error) {
+      throw new Error(`Backup failed: ${error}`);
+    }
+  }
+
+  // 数据恢复
+  async restore(backupFile: string): Promise<void> {
+    try {
+      const data = await fs.readFile(backupFile, 'utf-8');
+      const parsedData = JSON.parse(data) as T;
+      this.store.store = parsedData;
+    } catch (error) {
+      throw new Error(`Restore failed: ${error}`);
+    }
+  }
+
+  // 清理旧备份
+  async cleanupBackups(maxFiles: number = 10): Promise<void> {
+    try {
+      const files = await fs.readdir(this.backupPath);
+      const backupFiles = files
+        .filter(file => file.startsWith('backup-') && file.endsWith('.json'))
+        .map(file => ({
+          name: file,
+          path: path.join(this.backupPath, file),
+          time: fs.stat(path.join(this.backupPath, file)).then(stat => stat.mtime)
+        }));
+
+      if (backupFiles.length > maxFiles) {
+        const sortedFiles = await Promise.all(
+          backupFiles.map(async file => ({
+            ...file,
+            time: await file.time
+          }))
+        );
+
+        sortedFiles.sort((a, b) => b.time.getTime() - a.time.getTime());
+        
+        const filesToDelete = sortedFiles.slice(maxFiles);
+        await Promise.all(
+          filesToDelete.map(file => fs.unlink(file.path))
+        );
+      }
+    } catch (error) {
+      console.error('Failed to cleanup backups:', error);
+    }
+  }
+
+  // 数据验证
+  abstract validate(data: any): boolean;
+  
+  // 数据迁移
+  abstract migrate(version: number): Promise<void>;
+}
+```
+
+### 2. 用户事件管理器
+```typescript
+interface UserEventStore {
+  events: UserEvent[];
+  metadata: {
+    version: number;
+    lastModified: string;
+  };
+}
+
+class UserEventManager extends BaseDataManager<UserEventStore> {
+  constructor() {
+    super(
+      {
+        name: 'user-events',
+        defaults: {
+          events: [],
+          metadata: {
+            version: 1,
+            lastModified: new Date().toISOString()
+          }
+        },
+        schema: {
+          events: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                title: { type: 'string', minLength: 1, maxLength: 100 },
+                date: { type: 'string', format: 'date-time' },
+                repeatType: { 
+                  type: 'string', 
+                  enum: ['none', 'yearly', 'monthly', 'weekly'] 
+                }
+              },
+              required: ['id', 'title', 'date', 'repeatType']
+            }
+          }
+        }
+      },
+      path.join(DATA_PATH, 'backups', 'events')
+    );
+  }
+
+  // 获取所有事件
+  getAllEvents(): UserEvent[] {
+    return this.store.get('events', []);
+  }
+
+  // 根据日期获取事件
+  getEventsByDate(date: string): UserEvent[] {
+    const events = this.getAllEvents();
+    return events.filter(event => this.isEventOnDate(event, date));
+  }
+
+  // 添加事件
+  async addEvent(eventData: Omit<UserEvent, 'id' | 'metadata'>): Promise<UserEvent> {
+    const event: UserEvent = {
+      ...eventData,
+      id: this.generateId(),
+      metadata: {
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        version: 1
+      }
+    };
+
+    if (!this.validate(event)) {
+      throw new Error('Invalid event data');
+    }
+
+    const events = this.getAllEvents();
+    events.push(event);
+    
+    this.store.set('events', events);
+    this.updateMetadata();
+    
+    return event;
+  }
+
+  // 更新事件
+  async updateEvent(id: string, updates: Partial<UserEvent>): Promise<UserEvent> {
+    const events = this.getAllEvents();
+    const index = events.findIndex(event => event.id === id);
+    
+    if (index === -1) {
+      throw new Error('Event not found');
+    }
+
+    const updatedEvent = {
+      ...events[index],
+      ...updates,
+      metadata: {
+        ...events[index].metadata,
+        updatedAt: new Date().toISOString(),
+        version: events[index].metadata.version + 1
+      }
+    };
+
+    if (!this.validate(updatedEvent)) {
+      throw new Error('Invalid event data');
+    }
+
+    events[index] = updatedEvent;
+    this.store.set('events', events);
+    this.updateMetadata();
+    
+    return updatedEvent;
+  }
+
+  // 删除事件
+  async deleteEvent(id: string): Promise<boolean> {
+    const events = this.getAllEvents();
+    const filteredEvents = events.filter(event => event.id !== id);
+    
+    if (filteredEvents.length === events.length) {
+      return false; // 事件不存在
+    }
+    
+    this.store.set('events', filteredEvents);
+    this.updateMetadata();
+    
+    return true;
+  }
+
+  // 检查事件是否在指定日期
+  private isEventOnDate(event: UserEvent, date: string): boolean {
+    const eventDate = new Date(event.date);
+    const targetDate = new Date(date);
+
+    // 直接日期匹配
+    if (this.isSameDate(eventDate, targetDate)) {
+      return true;
+    }
+
+    // 重复事件检查
+    return this.isRepeatEventOnDate(event, targetDate);
+  }
+
+  // 重复事件日期检查
+  private isRepeatEventOnDate(event: UserEvent, targetDate: Date): boolean {
+    const eventDate = new Date(event.date);
+    
+    switch (event.repeatType) {
+      case 'yearly':
+        return eventDate.getMonth() === targetDate.getMonth() &&
+               eventDate.getDate() === targetDate.getDate();
+      
+      case 'monthly':
+        return eventDate.getDate() === targetDate.getDate();
+      
+      case 'weekly':
+        return eventDate.getDay() === targetDate.getDay();
+      
+      default:
+        return false;
+    }
+  }
+
+  private isSameDate(date1: Date, date2: Date): boolean {
+    return date1.getFullYear() === date2.getFullYear() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getDate() === date2.getDate();
+  }
+
+  private generateId(): string {
+    return `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  private updateMetadata(): void {
+    this.store.set('metadata', {
+      version: 1,
+      lastModified: new Date().toISOString()
+    });
+  }
+
+  validate(data: any): boolean {
+    return typeof data === 'object' &&
+           typeof data.id === 'string' &&
+           typeof data.title === 'string' &&
+           data.title.length > 0 &&
+           typeof data.date === 'string' &&
+           ['none', 'yearly', 'monthly', 'weekly'].includes(data.repeatType);
+  }
+
+  async migrate(version: number): Promise<void> {
+    // 数据迁移逻辑
+    if (version < 1) {
+      // 从旧版本迁移
+    }
+  }
+}
+```
+
+### 3. 假期数据管理器
+```typescript
+interface HolidayStore {
+  holidays: Holiday[];
+  metadata: {
+    version: number;
+    lastUpdate: string;
+    source: string;
+  };
+}
+
+class HolidayManager extends BaseDataManager<HolidayStore> {
+  private readonly HOLIDAY_SOURCE_URL = 'https://raw.githubusercontent.com/zfdang/chinese-lunar-calendar-for-mac/master/WanNianLi/WanNianLi/Resources/vendors/holidays.js';
+
+  constructor() {
+    super(
+      {
+        name: 'holidays',
+        defaults: {
+          holidays: [],
+          metadata: {
+            version: 1,
+            lastUpdate: '',
+            source: ''
+          }
+        }
+      },
+      path.join(DATA_PATH, 'backups', 'holidays')
+    );
+  }
+
+  // 获取假期数据
+  getHolidays(): Holiday[] {
+    return this.store.get('holidays', []);
+  }
+
+  // 获取指定日期的假期
+  getHolidayByDate(date: string): Holiday | null {
+    const holidays = this.getHolidays();
+    return holidays.find(holiday => holiday.date === date) || null;
+  }
+
+  // 检查是否为假期
+  isHoliday(date: string): boolean {
+    const holiday = this.getHolidayByDate(date);
+    return holiday?.type === 'holiday';
+  }
+
+  // 检查是否为工作日（调休）
+  isWorkday(date: string): boolean {
+    const holiday = this.getHolidayByDate(date);
+    return holiday?.type === 'workday';
+  }
+
+  // 更新假期数据
+  async updateHolidays(): Promise<boolean> {
+    try {
+      const response = await fetch(this.HOLIDAY_SOURCE_URL);
+      const content = await response.text();
+      
+      const holidays = this.parseHolidayData(content);
+      
+      this.store.set('holidays', holidays);
+      this.store.set('metadata', {
+        version: 1,
+        lastUpdate: new Date().toISOString(),
+        source: this.HOLIDAY_SOURCE_URL
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to update holidays:', error);
+      return false;
+    }
+  }
+
+  // 解析假期数据
+  private parseHolidayData(content: string): Holiday[] {
+    try {
+      // 解析 holidays.js 文件内容
+      // 这里需要根据实际文件格式进行解析
+      
+      // 示例解析逻辑
+      const match = content.match(/var\s+holidays\s*=\s*(\{[\s\S]*?\});/);
+      if (!match) {
+        throw new Error('Invalid holiday data format');
+      }
+      
+      const holidayData = eval(`(${match[1]})`);
+      const holidays: Holiday[] = [];
+      
+      Object.entries(holidayData).forEach(([year, yearData]: [string, any]) => {
+        Object.entries(yearData).forEach(([month, monthData]: [string, any]) => {
+          Object.entries(monthData).forEach(([day, dayData]: [string, any]) => {
+            const date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            
+            holidays.push({
+              date,
+              name: dayData.name || '',
+              type: dayData.type || 'holiday',
+              isOfficial: true,
+              description: dayData.description,
+              category: 'national'
+            });
+          });
+        });
+      });
+      
+      return holidays;
+    } catch (error) {
+      console.error('Failed to parse holiday data:', error);
+      return [];
+    }
+  }
+
+  // 获取最后更新时间
+  getLastUpdateTime(): string {
+    return this.store.get('metadata.lastUpdate', '');
+  }
+
+  // 检查是否需要更新
+  shouldUpdate(): boolean {
+    const lastUpdate = this.getLastUpdateTime();
+    if (!lastUpdate) return true;
+    
+    const lastUpdateDate = new Date(lastUpdate);
+    const now = new Date();
+    const daysSinceUpdate = Math.floor((now.getTime() - lastUpdateDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    return daysSinceUpdate >= 7; // 一周更新一次
+  }
+
+  validate(data: any): boolean {
+    return Array.isArray(data.holidays) &&
+           data.holidays.every((holiday: any) => 
+             typeof holiday.date === 'string' &&
+             typeof holiday.name === 'string' &&
+             ['holiday', 'workday', 'festival'].includes(holiday.type)
+           );
+  }
+
+  async migrate(version: number): Promise<void> {
+    // 假期数据迁移逻辑
+  }
+}
+```
+
+### 4. 设置管理器
+```typescript
+class SettingsManager extends BaseDataManager<AppSettings> {
+  constructor() {
+    super(
+      {
+        name: 'settings',
+        defaults: {
+          general: {
+            autoLaunch: false,
+            language: 'zh-CN',
+            theme: 'auto',
+            showLunarCalendar: true
+          },
+          calendar: {
+            weekStartsOn: 1,
+            showWeekNumbers: false,
+            highlightToday: true,
+            showFestivals: true,
+            showSolarTerms: true
+          },
+          events: {
+            defaultCategory: 'personal',
+            defaultReminder: false,
+            defaultReminderTime: 15
+          },
+          data: {
+            lastHolidayUpdate: '',
+            autoUpdateHolidays: true,
+            dataBackup: true,
+            maxBackupFiles: 10
+          }
+        }
+      },
+      path.join(DATA_PATH, 'backups', 'settings')
+    );
+  }
+
+  // 获取所有设置
+  getAllSettings(): AppSettings {
+    return this.store.store;
+  }
+
+  // 获取特定设置
+  getSetting<K extends keyof AppSettings>(category: K): AppSettings[K] {
+    return this.store.get(category);
+  }
+
+  // 更新设置
+  updateSetting<K extends keyof AppSettings>(
+    category: K, 
+    updates: Partial<AppSettings[K]>
+  ): void {
+    const currentSettings = this.getSetting(category);
+    const newSettings = { ...currentSettings, ...updates };
+    
+    this.store.set(category, newSettings);
+  }
+
+  // 重置设置
+  resetSettings(): void {
+    this.store.clear();
+  }
+
+  validate(data: any): boolean {
+    return typeof data === 'object' &&
+           typeof data.general === 'object' &&
+           typeof data.calendar === 'object' &&
+           typeof data.events === 'object' &&
+           typeof data.data === 'object';
+  }
+
+  async migrate(version: number): Promise<void> {
+    // 设置数据迁移逻辑
+  }
+}
+```
+
+## 数据同步和缓存
+
+### 1. 农历数据缓存
+```typescript
+class LunarCacheManager extends BaseDataManager<LunarCache> {
+  private readonly CACHE_DURATION = 30 * 24 * 60 * 60 * 1000; // 30天
+
+  constructor() {
+    super(
+      {
+        name: 'lunar-cache',
+        defaults: {}
+      },
+      path.join(DATA_PATH, 'backups', 'cache')
+    );
+  }
+
+  // 获取缓存的农历数据
+  getCachedLunarData(date: Date): any | null {
+    const dateKey = this.getDateKey(date);
+    const cached = this.store.get(dateKey);
+    
+    if (!cached) return null;
+    
+    // 检查缓存是否过期
+    const cachedTime = new Date(cached.cachedAt);
+    const now = new Date();
+    
+    if (now.getTime() - cachedTime.getTime() > this.CACHE_DURATION) {
+      this.store.delete(dateKey);
+      return null;
+    }
+    
+    return cached;
+  }
+
+  // 缓存农历数据
+  setCachedLunarData(date: Date, data: any): void {
+    const dateKey = this.getDateKey(date);
+    
+    this.store.set(dateKey, {
+      ...data,
+      cachedAt: new Date().toISOString()
+    });
+  }
+
+  // 清理过期缓存
+  cleanupExpiredCache(): void {
+    const allData = this.store.store;
+    const now = new Date();
+    
+    Object.keys(allData).forEach(key => {
+      const cached = allData[key];
+      const cachedTime = new Date(cached.cachedAt);
+      
+      if (now.getTime() - cachedTime.getTime() > this.CACHE_DURATION) {
+        this.store.delete(key);
+      }
+    });
+  }
+
+  private getDateKey(date: Date): string {
+    return date.toISOString().split('T')[0]; // YYYY-MM-DD
+  }
+
+  validate(data: any): boolean {
+    return typeof data === 'object';
+  }
+
+  async migrate(version: number): Promise<void> {
+    // 缓存数据迁移逻辑
+  }
+}
+```
+
+### 2. 数据服务统一接口
+```typescript
+class DataService {
+  private userEventManager: UserEventManager;
+  private holidayManager: HolidayManager;
+  private settingsManager: SettingsManager;
+  private lunarCacheManager: LunarCacheManager;
+
+  constructor() {
+    this.userEventManager = new UserEventManager();
+    this.holidayManager = new HolidayManager();
+    this.settingsManager = new SettingsManager();
+    this.lunarCacheManager = new LunarCacheManager();
+  }
+
+  // 用户事件相关
+  async getUserEvents(): Promise<UserEvent[]> {
+    return this.userEventManager.getAllEvents();
+  }
+
+  async addUserEvent(eventData: Omit<UserEvent, 'id' | 'metadata'>): Promise<UserEvent> {
+    return this.userEventManager.addEvent(eventData);
+  }
+
+  async updateUserEvent(id: string, updates: Partial<UserEvent>): Promise<UserEvent> {
+    return this.userEventManager.updateEvent(id, updates);
+  }
+
+  async deleteUserEvent(id: string): Promise<boolean> {
+    return this.userEventManager.deleteEvent(id);
+  }
+
+  // 假期相关
+  async getHolidays(): Promise<Holiday[]> {
+    return this.holidayManager.getHolidays();
+  }
+
+  async updateHolidays(): Promise<boolean> {
+    return this.holidayManager.updateHolidays();
+  }
+
+  isHoliday(date: string): boolean {
+    return this.holidayManager.isHoliday(date);
+  }
+
+  // 设置相关
+  getSettings(): AppSettings {
+    return this.settingsManager.getAllSettings();
+  }
+
+  updateSettings<K extends keyof AppSettings>(
+    category: K, 
+    updates: Partial<AppSettings[K]>
+  ): void {
+    this.settingsManager.updateSetting(category, updates);
+  }
+
+  // 数据备份
+  async backupAllData(): Promise<string[]> {
+    const backups = await Promise.all([
+      this.userEventManager.backup(),
+      this.holidayManager.backup(),
+      this.settingsManager.backup()
+    ]);
+    
+    return backups;
+  }
+
+  // 数据清理
+  async cleanupData(): Promise<void> {
+    const settings = this.settingsManager.getSetting('data');
+    
+    await Promise.all([
+      this.userEventManager.cleanupBackups(settings.maxBackupFiles),
+      this.holidayManager.cleanupBackups(settings.maxBackupFiles),
+      this.settingsManager.cleanupBackups(settings.maxBackupFiles)
+    ]);
+    
+    this.lunarCacheManager.cleanupExpiredCache();
+  }
+
+  // 数据同步检查
+  async syncData(): Promise<void> {
+    const settings = this.settingsManager.getSetting('data');
+    
+    if (settings.autoUpdateHolidays && this.holidayManager.shouldUpdate()) {
+      await this.holidayManager.updateHolidays();
+    }
+  }
+}
+
+export default DataService;
+```
+
+## IPC 接口定义
+
+### 1. 主进程IPC处理
+```typescript
+import { ipcMain } from 'electron';
+import DataService from './DataService';
+
+class IPCHandler {
+  private dataService: DataService;
+
+  constructor() {
+    this.dataService = new DataService();
+    this.setupIPCHandlers();
+  }
+
+  private setupIPCHandlers(): void {
+    // 用户事件相关
+    ipcMain.handle('events:get-all', () => {
+      return this.dataService.getUserEvents();
+    });
+
+    ipcMain.handle('events:add', (event, eventData) => {
+      return this.dataService.addUserEvent(eventData);
+    });
+
+    ipcMain.handle('events:update', (event, id, updates) => {
+      return this.dataService.updateUserEvent(id, updates);
+    });
+
+    ipcMain.handle('events:delete', (event, id) => {
+      return this.dataService.deleteUserEvent(id);
+    });
+
+    // 假期相关
+    ipcMain.handle('holidays:get-all', () => {
+      return this.dataService.getHolidays();
+    });
+
+    ipcMain.handle('holidays:update', () => {
+      return this.dataService.updateHolidays();
+    });
+
+    ipcMain.handle('holidays:is-holiday', (event, date) => {
+      return this.dataService.isHoliday(date);
+    });
+
+    // 设置相关
+    ipcMain.handle('settings:get', () => {
+      return this.dataService.getSettings();
+    });
+
+    ipcMain.handle('settings:update', (event, category, updates) => {
+      this.dataService.updateSettings(category, updates);
+      return true;
+    });
+
+    // 数据管理相关
+    ipcMain.handle('data:backup', () => {
+      return this.dataService.backupAllData();
+    });
+
+    ipcMain.handle('data:sync', () => {
+      return this.dataService.syncData();
+    });
+  }
+}
+
+export default IPCHandler;
+```
+
+### 2. 渲染进程类型定义
+```typescript
+// preload.d.ts
+export interface ElectronAPI {
+  // 用户事件
+  getUserEvents(): Promise<UserEvent[]>;
+  addUserEvent(eventData: Omit<UserEvent, 'id' | 'metadata'>): Promise<UserEvent>;
+  updateUserEvent(id: string, updates: Partial<UserEvent>): Promise<UserEvent>;
+  deleteUserEvent(id: string): Promise<boolean>;
+
+  // 假期
+  getHolidays(): Promise<Holiday[]>;
+  updateHolidays(): Promise<boolean>;
+  isHoliday(date: string): Promise<boolean>;
+
+  // 设置
+  getSettings(): Promise<AppSettings>;
+  updateSettings<K extends keyof AppSettings>(
+    category: K, 
+    updates: Partial<AppSettings[K]>
+  ): Promise<boolean>;
+
+  // 数据管理
+  backupData(): Promise<string[]>;
+  syncData(): Promise<void>;
+}
+
+declare global {
+  interface Window {
+    electronAPI: ElectronAPI;
+  }
+}
+```

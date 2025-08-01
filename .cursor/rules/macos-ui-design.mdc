@@ -1,0 +1,601 @@
+# macOS 风格 UI 设计规范
+
+## 设计理念
+
+### 1. 玻璃拟态 (Glassmorphism) 风格
+遵循现代 macOS 设计语言，采用玻璃拟态效果，营造轻盈、现代的视觉体验。
+
+### 2. 色彩体系
+```css
+/* 主色调 */
+--primary-blue: #3B82F6;
+--primary-slate-800: #1E293B;
+--primary-slate-500: #64748B;
+--primary-slate-100: #F1F5F9;
+
+/* 语义色彩 */
+--holiday-red: #EF4444;    /* 假日/周末 */
+--event-green: #22C55E;    /* 事件/成功 */
+--workday-slate: #64748B;  /* 调休上班 */
+--today-amber: #F59E0B;    /* 今日高亮 */
+
+/* 透明度配置 */
+--glass-bg: rgba(248, 250, 252, 0.8);
+--glass-border: rgba(255, 255, 255, 0.5);
+--glass-shadow: 0 10px 20px rgba(0,0,0,0.2);
+```
+
+### 3. 字体规范
+```css
+/* 系统字体栈 */
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+/* 字体大小层级 */
+--text-xs: 0.75rem;      /* 农历、小标签 */
+--text-sm: 0.875rem;     /* 辅助文字 */
+--text-base: 1rem;       /* 正文 */
+--text-lg: 1.125rem;     /* 标题 */
+--text-xl: 1.25rem;      /* 大标题 */
+```
+
+## Popover 组件规范
+
+### 1. 弹窗容器
+```typescript
+interface PopoverContainerProps {
+  width?: number;
+  height?: number;
+  className?: string;
+  children: React.ReactNode;
+}
+
+const PopoverContainer: React.FC<PopoverContainerProps> = ({
+  width = 420,
+  height = 520,
+  className = '',
+  children
+}) => {
+  return (
+    <div className={`popover-container ${className}`}>
+      <div className="popover-arrow" />
+      <div 
+        className="popover-body"
+        style={{ width: `${width}px`, height: `${height}px` }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
+```
+
+### 2. Popover 样式
+```css
+.popover-container {
+  position: relative;
+  display: inline-block;
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+  transition: transform 0.3s ease-out;
+}
+
+.popover-container:hover {
+  transform: translateY(-5px);
+}
+
+.popover-arrow {
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 10px solid rgba(248, 250, 252, 0.8);
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.popover-body {
+  background-color: rgba(248, 250, 252, 0.8);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+```
+
+## 日历组件规范
+
+### 1. 日历单元格
+```typescript
+interface CalendarCellProps {
+  date: number;
+  lunarDate: string;
+  isToday?: boolean;
+  isWeekend?: boolean;
+  isHoliday?: boolean;
+  events?: string[];
+  festivals?: string[];
+  solarTerms?: string[];
+  onClick?: () => void;
+}
+
+const CalendarCell: React.FC<CalendarCellProps> = ({
+  date,
+  lunarDate,
+  isToday = false,
+  isWeekend = false,
+  isHoliday = false,
+  events = [],
+  festivals = [],
+  solarTerms = [],
+  onClick
+}) => {
+  const cellClasses = cn(
+    'p-1 rounded-lg hover:bg-black/5 cursor-pointer relative',
+    {
+      'bg-amber-400 ring-2 ring-amber-500/50': isToday,
+      'text-red-500': isWeekend || isHoliday,
+      'text-slate-400': !isCurrentMonth,
+    }
+  );
+
+  return (
+    <div className={cellClasses} onClick={onClick}>
+      <div className="text-center">{date}</div>
+      <div className="text-[10px] scale-90 text-center">
+        {festivals.length > 0 && (
+          <span className="text-blue-600 truncate">{festivals[0]}</span>
+        )}
+        {solarTerms.length > 0 && (
+          <span className="text-blue-600">{solarTerms[0]}</span>
+        )}
+        {festivals.length === 0 && solarTerms.length === 0 && (
+          <span className="text-slate-500">{lunarDate}</span>
+        )}
+      </div>
+      {events.length > 0 && (
+        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-green-500 rounded-full" />
+      )}
+    </div>
+  );
+};
+```
+
+### 2. 日历头部导航
+```typescript
+interface CalendarHeaderProps {
+  currentDate: Date;
+  onPrevYear: () => void;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+  onNextYear: () => void;
+  onToday: () => void;
+  onDateClick?: () => void;
+}
+
+const CalendarHeader: React.FC<CalendarHeaderProps> = ({
+  currentDate,
+  onPrevYear,
+  onPrevMonth,
+  onNextMonth,
+  onNextYear,
+  onToday,
+  onDateClick
+}) => {
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth() + 1;
+
+  return (
+    <header className="p-4 flex justify-between items-center shrink-0">
+      <div className="flex items-center gap-1">
+        <button 
+          title="上一年 (←)" 
+          className="p-1 rounded-md hover:bg-black/10 transition-colors"
+          onClick={onPrevYear}
+        >
+          <MaterialIcon icon="keyboard_double_arrow_left" size="sm" />
+        </button>
+        <button 
+          title="上一月 (↑)" 
+          className="p-1 rounded-md hover:bg-black/10 transition-colors"
+          onClick={onPrevMonth}
+        >
+          <MaterialIcon icon="chevron_left" />
+        </button>
+      </div>
+      
+      <h1 
+        className="font-bold text-lg text-slate-800 cursor-pointer hover:bg-black/10 px-2 rounded-md transition-colors"
+        onClick={onDateClick}
+      >
+        {year}年 {month}月
+      </h1>
+      
+      <div className="flex items-center gap-1">
+        <button 
+          title="下一月 (↓)" 
+          className="p-1 rounded-md hover:bg-black/10 transition-colors"
+          onClick={onNextMonth}
+        >
+          <MaterialIcon icon="chevron_right" />
+        </button>
+        <button 
+          title="下一年 (→)" 
+          className="p-1 rounded-md hover:bg-black/10 transition-colors"
+          onClick={onNextYear}
+        >
+          <MaterialIcon icon="keyboard_double_arrow_right" size="sm" />
+        </button>
+      </div>
+    </header>
+  );
+};
+```
+
+## 按钮组件规范
+
+### 1. 主要按钮
+```typescript
+interface PrimaryButtonProps {
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+  icon?: string;
+}
+
+const PrimaryButton: React.FC<PrimaryButtonProps> = ({
+  children,
+  onClick,
+  disabled = false,
+  size = 'md',
+  icon
+}) => {
+  const sizeClasses = {
+    sm: 'px-4 py-1.5 text-sm',
+    md: 'px-6 py-2',
+    lg: 'px-8 py-3'
+  };
+
+  return (
+    <button
+      className={cn(
+        'bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition-all',
+        'disabled:opacity-50 disabled:cursor-not-allowed',
+        sizeClasses[size]
+      )}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      <div className="flex items-center justify-center gap-2">
+        {icon && <MaterialIcon icon={icon} />}
+        {children}
+      </div>
+    </button>
+  );
+};
+```
+
+### 2. 次要按钮
+```typescript
+const SecondaryButton: React.FC<PrimaryButtonProps> = ({
+  children,
+  onClick,
+  disabled = false,
+  size = 'md',
+  icon
+}) => {
+  const sizeClasses = {
+    sm: 'px-4 py-1.5 text-sm',
+    md: 'px-6 py-2',
+    lg: 'px-8 py-3'
+  };
+
+  return (
+    <button
+      className={cn(
+        'bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-all',
+        'disabled:opacity-50 disabled:cursor-not-allowed',
+        sizeClasses[size]
+      )}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      <div className="flex items-center justify-center gap-2">
+        {icon && <MaterialIcon icon={icon} />}
+        {children}
+      </div>
+    </button>
+  );
+};
+```
+
+### 3. 图标按钮
+```typescript
+interface IconButtonProps {
+  icon: string;
+  onClick?: () => void;
+  title?: string;
+  variant?: 'default' | 'primary';
+  size?: 'sm' | 'md' | 'lg';
+}
+
+const IconButton: React.FC<IconButtonProps> = ({
+  icon,
+  onClick,
+  title,
+  variant = 'default',
+  size = 'md'
+}) => {
+  const sizeClasses = {
+    sm: 'p-1',
+    md: 'p-2',
+    lg: 'p-3'
+  };
+
+  const variantClasses = {
+    default: 'rounded-full hover:bg-black/10 transition-all',
+    primary: 'bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-all'
+  };
+
+  return (
+    <button
+      className={cn(sizeClasses[size], variantClasses[variant])}
+      onClick={onClick}
+      title={title}
+    >
+      <MaterialIcon 
+        icon={icon} 
+        className={variant === 'default' ? 'text-slate-600' : 'text-white'} 
+      />
+    </button>
+  );
+};
+```
+
+## 输入组件规范
+
+### 1. 文本输入框
+```typescript
+interface TextInputProps {
+  placeholder?: string;
+  value?: string;
+  onChange?: (value: string) => void;
+  disabled?: boolean;
+  error?: string;
+  label?: string;
+}
+
+const TextInput: React.FC<TextInputProps> = ({
+  placeholder,
+  value,
+  onChange,
+  disabled = false,
+  error,
+  label
+}) => {
+  return (
+    <div className="space-y-2">
+      {label && (
+        <label className="text-sm font-medium text-slate-600 block">
+          {label}
+        </label>
+      )}
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange?.(e.target.value)}
+        disabled={disabled}
+        className={cn(
+          'w-full px-4 py-2.5 bg-white/70 border border-slate-300 rounded-lg',
+          'focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition-all',
+          'disabled:opacity-50 disabled:cursor-not-allowed',
+          error && 'border-red-400 focus:ring-red-400 focus:border-red-400'
+        )}
+      />
+      {error && (
+        <span className="text-sm text-red-500">{error}</span>
+      )}
+    </div>
+  );
+};
+```
+
+### 2. 文本域
+```typescript
+const TextArea: React.FC<TextInputProps & { rows?: number }> = ({
+  placeholder,
+  value,
+  onChange,
+  disabled = false,
+  error,
+  label,
+  rows = 3
+}) => {
+  return (
+    <div className="space-y-2">
+      {label && (
+        <label className="text-sm font-medium text-slate-600 block">
+          {label}
+        </label>
+      )}
+      <textarea
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange?.(e.target.value)}
+        disabled={disabled}
+        rows={rows}
+        className={cn(
+          'w-full px-4 py-2.5 bg-white/70 border border-slate-300 rounded-lg',
+          'focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition-all',
+          'disabled:opacity-50 disabled:cursor-not-allowed resize-none',
+          error && 'border-red-400 focus:ring-red-400 focus:border-red-400'
+        )}
+      />
+      {error && (
+        <span className="text-sm text-red-500">{error}</span>
+      )}
+    </div>
+  );
+};
+```
+
+## 动画规范
+
+### 1. 进入动画
+```css
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in-up {
+  animation: slideInUp 0.3s ease-out;
+}
+```
+
+### 2. 悬停效果
+```css
+.hover-lift {
+  transition: transform 0.3s ease-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+```
+
+### 3. 过渡效果
+```css
+.transition-all {
+  transition: all 0.2s ease-in-out;
+}
+
+.transition-colors {
+  transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+```
+
+## 响应式设计
+
+### 1. 断点定义
+```css
+/* Tailwind CSS 断点 */
+/* sm: 640px */
+/* md: 768px */
+/* lg: 1024px */
+/* xl: 1280px */
+/* 2xl: 1536px */
+```
+
+### 2. Popover 响应式
+```typescript
+const useResponsivePopover = () => {
+  const [dimensions, setDimensions] = useState({
+    width: 420,
+    height: 520
+  });
+
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (window.innerWidth < 640) {
+        setDimensions({ width: 320, height: 480 });
+      } else {
+        setDimensions({ width: 420, height: 520 });
+      }
+    };
+
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
+
+  return dimensions;
+};
+```
+
+## 无障碍访问 (Accessibility)
+
+### 1. 键盘导航
+```typescript
+const useKeyboardNavigation = () => {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      switch (event.key) {
+        case 'ArrowLeft':
+          // 上一年
+          break;
+        case 'ArrowRight':
+          // 下一年
+          break;
+        case 'ArrowUp':
+          // 上一月
+          break;
+        case 'ArrowDown':
+          // 下一月
+          break;
+        case 'Enter':
+          // 回到今日
+          break;
+        case 'Escape':
+          // 关闭弹窗
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+};
+```
+
+### 2. ARIA 标签
+```typescript
+const CalendarWithA11y: React.FC = () => {
+  return (
+    <div 
+      role="application"
+      aria-label="万年历"
+      aria-describedby="calendar-instructions"
+    >
+      <div id="calendar-instructions" className="sr-only">
+        使用箭头键导航日历，回车键返回今日
+      </div>
+      {/* 日历内容 */}
+    </div>
+  );
+};
+```
+
+## 性能优化
+
+### 1. 组件记忆化
+```typescript
+const CalendarCell = React.memo<CalendarCellProps>(({ 
+  date, 
+  lunarDate, 
+  isToday, 
+  ...props 
+}) => {
+  // 组件实现
+});
+```
+
+### 2. 虚拟化渲染
+对于大量日历数据，使用虚拟化技术提升性能：
+
+```typescript
+import { FixedSizeGrid as Grid } from 'react-window';
+
+const VirtualizedCalendar: React.FC = () => {
+  // 虚拟化实现
+};
+```
