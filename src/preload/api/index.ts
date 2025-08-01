@@ -1,5 +1,5 @@
 // API接口导出
-// 当有API接口创建后，在此处添加导出语句
+export { windowApi, type WindowApi } from './window'
 
 // 示例：
 // export * from './events';

@@ -8,6 +8,7 @@ interface CalendarHeaderProps {
   onPrevMonth: () => void
   onNextMonth: () => void
   onToday: () => void
+  compact?: boolean
 }
 
 const CalendarHeader: React.FC<CalendarHeaderProps> = ({

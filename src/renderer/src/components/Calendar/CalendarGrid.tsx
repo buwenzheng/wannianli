@@ -6,6 +6,7 @@ import { cn } from '../../utils/classUtils'
 interface CalendarGridProps {
   dates: CalendarDate[]
   onDateClick: (date: Date) => void
+  compact?: boolean
 }
 
 const CalendarGrid: React.FC<CalendarGridProps> = ({ dates, onDateClick }) => {
