@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import dayjs from 'dayjs'
 import { CalendarDate, CalendarEvent } from '../types/calendar'
 import { getCalendarDates, isToday, isCurrentMonth, isSameDay } from '../utils/dateUtils'
+import { getLunarDate, getFestivals, getSolarTerms } from '../utils/lunarUtils'
 
 interface UseCalendarProps {
   initialDate?: Date
@@ -47,10 +48,12 @@ export function useCalendar({
         isCurrentMonth: isCurrentMonth(date, currentMonth),
         isSelected: isSameDay(selectedDate, date),
         events: dateEvents,
-        // 农历信息暂时为空，后续集成lunar-javascript时完善
+        // 农历信息
         lunarInfo: showLunar
           ? {
-              lunarDate: '初一' // 占位符
+              lunarDate: getLunarDate(date),
+              festivals: getFestivals(date),
+              solarTerms: getSolarTerms(date)
             }
           : undefined
       }

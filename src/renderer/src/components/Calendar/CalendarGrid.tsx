@@ -1,5 +1,6 @@
 import React from 'react'
 import { CalendarDate } from '../../types/calendar'
+import { formatLunarDisplay } from '../../utils/lunarUtils'
 import { cn } from '../../utils/classUtils'
 
 interface CalendarGridProps {
@@ -28,12 +29,20 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({ dates, onDateClick }) => {
 
             {/* 农历信息 */}
             {dateInfo.lunarInfo && (
-              <span className="lunar-info">{dateInfo.lunarInfo.lunarDate}</span>
+              <span className="lunar-info">
+                {formatLunarDisplay(
+                  dateInfo.lunarInfo.lunarDate,
+                  dateInfo.lunarInfo.festivals,
+                  dateInfo.lunarInfo.solarTerms
+                )}
+              </span>
             )}
           </div>
 
           {/* 节日标记 */}
-          {dateInfo.lunarInfo?.festival && <div className="festival-dot" />}
+          {dateInfo.lunarInfo?.festivals && dateInfo.lunarInfo.festivals.length > 0 && (
+            <div className="festival-dot" />
+          )}
 
           {/* 事件标记 */}
           {dateInfo.events && dateInfo.events.length > 0 && <div className="event-dot" />}

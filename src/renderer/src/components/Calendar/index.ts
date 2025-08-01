@@ -2,6 +2,7 @@
 export { default as Calendar } from './Calendar'
 export { default as CalendarGrid } from './CalendarGrid'
 export { default as CalendarHeader } from './CalendarHeader'
+export { default as LunarInfoDisplay } from './LunarInfoDisplay'
 
 // 重新导出类型
 export type {

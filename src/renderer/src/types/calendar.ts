@@ -8,8 +8,8 @@ export interface CalendarDate {
   isSelected: boolean
   lunarInfo?: {
     lunarDate: string
-    festival?: string
-    solarTerm?: string
+    festivals: string[]
+    solarTerms: string[]
   }
   events?: CalendarEvent[]
 }
