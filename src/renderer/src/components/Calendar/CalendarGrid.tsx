@@ -1,7 +1,7 @@
 import React from 'react'
-import { CalendarDate } from '../../types/calendar'
-import { formatLunarDisplay } from '../../utils/lunarUtils'
-import { cn } from '../../utils/classUtils'
+import type { CalendarDate } from '../../types/calendar'
+import { formatLunarDisplay } from '@utils/lunarUtils'
+import { cn } from '@utils/classUtils'
 
 interface CalendarGridProps {
   dates: CalendarDate[]

@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
-import { useLunarDate } from '../../hooks/useLunarDate'
-import { LunarInfoDisplay } from '../Calendar/LunarInfoDisplay'
-import { Icon, IconButton } from '../ui'
-import { flatIcons } from '../../constants/icons'
+import { useLunarDate } from '@hooks/useLunarDate'
+import { LunarInfoDisplay } from '@components/Calendar/LunarInfoDisplay'
+import { Icon, IconButton } from '@components/ui'
+import { flatIcons } from '@renderer/constants/icons'
 import dayjs from 'dayjs'
 
 /**

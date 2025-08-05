@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { AppSettings } from '../../../main/core/simpleSettings'
+import type { AppSettings } from '@shared/types'
 
 /**
  * 设置管理Hook

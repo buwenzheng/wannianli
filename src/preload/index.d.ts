@@ -1,6 +1,6 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import { WindowApi, TrayApi } from './api'
-import { SettingsApi } from './api/settings'
+import { WindowApi, TrayApi } from '@preload-api'
+import { SettingsApi } from '@preload-api/settings'
 
 declare global {
   interface Window {

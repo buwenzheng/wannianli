@@ -1,8 +1,8 @@
 import React from 'react'
-import { useSettings, useAutoLaunch, useTheme } from '../../hooks/useSettings'
-import { Icon } from '../ui/Icon'
-import { IconButton } from '../ui/IconButton'
-import { flatIcons } from '../../constants/icons'
+import { useSettings, useAutoLaunch, useTheme } from '@hooks/useSettings'
+import { Icon } from '@components/ui/Icon'
+import { IconButton } from '@components/ui/IconButton'
+import { flatIcons } from '@renderer/constants/icons'
 
 /**
  * 设置窗口主组件

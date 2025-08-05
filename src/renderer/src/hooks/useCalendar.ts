@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react'
 import dayjs from 'dayjs'
-import { CalendarDate, CalendarEvent } from '../types/calendar'
-import { getCalendarDates, isToday, isCurrentMonth, isSameDay } from '../utils/dateUtils'
-import { getLunarDate, getFestivals, getSolarTerms } from '../utils/lunarUtils'
+import type { CalendarDate, CalendarEvent } from '../types/calendar'
+import { getCalendarDates, isToday, isCurrentMonth, isSameDay } from '@utils/dateUtils'
+import { getLunarDate, getFestivals, getSolarTerms } from '@utils/lunarUtils'
 
 interface UseCalendarProps {
   initialDate?: Date

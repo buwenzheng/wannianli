@@ -8,7 +8,7 @@ import {
   flashTray,
   isTraySupported,
   getTray
-} from '../tray'
+} from '@main-core/tray'
 
 /**
  * 托盘管理相关的IPC通信处理

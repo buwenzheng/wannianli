@@ -1,9 +1,9 @@
 import React from 'react'
-import { useCalendar } from '../../hooks/useCalendar'
+import { useCalendar } from '@hooks/useCalendar'
 import dayjs from 'dayjs'
 import { Lunar } from 'lunar-javascript'
-import { cn } from '../../utils/classUtils'
-import { CALENDAR_POPUP_WINDOW } from '../../constants/window'
+import { cn } from '@utils/classUtils'
+import { CALENDAR_POPUP_WINDOW } from '@renderer/constants/window'
 
 /**
  * macOS风格弹出窗口专用的日历组件

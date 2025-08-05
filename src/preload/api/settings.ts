@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron'
-import type { AppSettings } from '../../main/core/simpleSettings'
+import type { AppSettings } from '@shared/types'
 
 /**
  * 设置相关的预加载API

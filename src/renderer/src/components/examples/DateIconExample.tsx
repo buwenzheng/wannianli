@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { IconButton } from '../ui'
-import { flatIcons } from '../../constants/icons'
+import { IconButton } from '@components/ui'
+import { flatIcons } from '@renderer/constants/icons'
 
 /**
  * 动态日期图标演示组件

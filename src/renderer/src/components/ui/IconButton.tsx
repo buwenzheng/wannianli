@@ -1,7 +1,7 @@
 import React from 'react'
 import { LucideIcon } from 'lucide-react'
 import { cn } from '@utils/classUtils'
-import { Icon, IconProps } from './Icon'
+import { Icon, IconProps } from '@components/ui/Icon'
 
 // 按钮变体
 const buttonVariants = {

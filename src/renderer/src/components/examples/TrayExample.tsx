@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
-import { useTray } from '../../hooks/useTray'
-import { Icon, IconButton } from '../ui'
-import { flatIcons } from '../../constants/icons'
+import { useTray } from '@hooks/useTray'
+import { Icon, IconButton } from '@components/ui'
+import { flatIcons } from '@renderer/constants/icons'
 
 /**
  * 系统托盘功能演示组件

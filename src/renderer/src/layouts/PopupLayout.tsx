@@ -1,7 +1,7 @@
 import React from 'react'
-import { Icon, IconButton } from '../components/ui'
-import { flatIcons } from '../constants/icons'
-import { usePopupWindow } from '../hooks/useWindow'
+import { Icon, IconButton } from '@components/ui'
+import { flatIcons } from '@renderer/constants/icons'
+import { usePopupWindow } from '@hooks/useWindow'
 
 interface PopupLayoutProps {
   /** 子组件 */

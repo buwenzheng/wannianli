@@ -1,6 +1,6 @@
 import React from 'react'
-import { PopupCalendar } from './components/Calendar/PopupCalendar'
-import { SettingsWindow } from './components/Settings/SettingsWindow'
+import { PopupCalendar } from '@components/Calendar/PopupCalendar'
+import { SettingsWindow } from '@components/Settings/SettingsWindow'
 
 /**
  * 万年历应用主界面
@@ -15,7 +15,7 @@ function App(): React.JSX.Element {
   }
 
   return (
-    <div className="flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* macOS风格日历弹窗 */}
       <PopupCalendar />
     </div>

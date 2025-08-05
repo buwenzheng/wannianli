@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron'
-import { getSettingsManager, AppSettings } from '../simpleSettings'
+import { getSettingsManager, AppSettings } from '@main-core/simpleSettings'
 
 /**
  * 设置相关的IPC处理器

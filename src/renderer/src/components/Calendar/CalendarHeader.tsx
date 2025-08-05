@@ -1,7 +1,7 @@
 import React from 'react'
-import { getMonthName, getWeekDays } from '../../utils/dateUtils'
-import { Icon } from '../ui/Icon'
-import { flatIcons } from '../../constants/icons'
+import { getMonthName, getWeekDays } from '@utils/dateUtils'
+import { Icon } from '@components/ui/Icon'
+import { flatIcons } from '@renderer/constants/icons'
 
 interface CalendarHeaderProps {
   currentDate: Date

@@ -1,6 +1,6 @@
 import React from 'react'
-import { Icon, IconButton } from '../ui'
-import { flatIcons } from '../../constants/icons'
+import { Icon, IconButton } from '@components/ui'
+import { flatIcons } from '@renderer/constants/icons'
 
 /**
  * 图标使用示例组件

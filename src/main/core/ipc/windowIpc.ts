@@ -6,7 +6,7 @@ import {
   closeCalendarPopupWindow,
   getMainWindow,
   getCalendarPopupWindow
-} from '../window'
+} from '@main-core/window'
 
 /**
  * 窗口管理相关的IPC通信处理

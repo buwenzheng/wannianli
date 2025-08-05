@@ -1,7 +1,7 @@
 import React from 'react'
-import { LunarData } from '../../hooks/useLunarDate'
-import { Icon } from '../ui/Icon'
-import { flatIcons } from '../../constants/icons'
+import type { LunarData } from '@hooks/useLunarDate'
+import { Icon } from '@components/ui/Icon'
+import { flatIcons } from '@renderer/constants/icons'
 
 interface LunarInfoDisplayProps {
   /** 农历数据 */

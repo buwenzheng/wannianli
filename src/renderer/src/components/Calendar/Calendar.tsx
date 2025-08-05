@@ -1,8 +1,8 @@
 import React from 'react'
-import { CalendarProps } from '../../types/calendar'
-import { useCalendar } from '../../hooks/useCalendar'
-import CalendarHeader from './CalendarHeader'
-import CalendarGrid from './CalendarGrid'
+import type { CalendarProps } from '../../types/calendar'
+import { useCalendar } from '@hooks/useCalendar'
+import CalendarHeader from '@components/Calendar/CalendarHeader'
+import CalendarGrid from '@components/Calendar/CalendarGrid'
 
 const Calendar: React.FC<CalendarProps> = ({
   currentDate,
