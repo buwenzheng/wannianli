@@ -44,10 +44,9 @@ export const PopupCalendar: React.FC = (): React.JSX.Element => {
   return (
     <div
       className={cn(
-        `w-[${CALENDAR_POPUP_WINDOW.WIDTH}px] h-[${CALENDAR_POPUP_WINDOW.HEIGHT}px]`, // 使用窗口常量
+        `w-${CALENDAR_POPUP_WINDOW.WIDTH} h-${CALENDAR_POPUP_WINDOW.HEIGHT}`, // 使用窗口常量
         'bg-slate-50/80 backdrop-blur-[24px]',
-        'rounded-xl border border-white/50 shadow-xl',
-        'overflow-hidden'
+        'rounded-xl border border-white/50 shadow-xl'
       )}
     >
       {/* 顶部导航 */}
@@ -56,7 +55,7 @@ export const PopupCalendar: React.FC = (): React.JSX.Element => {
           <button
             title="上一年 (←)"
             onClick={goToPrevYear}
-            className="p-1 rounded-md hover:bg-black/10 transition-colors no-drag"
+            className="p-1 rounded-md hover:bg-black/10 transition-colors"
           >
             <svg
               className="w-4 h-4 text-slate-600"
@@ -75,7 +74,7 @@ export const PopupCalendar: React.FC = (): React.JSX.Element => {
           <button
             title="上一月 (↑)"
             onClick={goToPrevMonth}
-            className="p-1 rounded-md hover:bg-black/10 transition-colors no-drag"
+            className="p-1 rounded-md hover:bg-black/10 transition-colors"
           >
             <svg
               className="w-4 h-4 text-slate-600"
@@ -93,7 +92,7 @@ export const PopupCalendar: React.FC = (): React.JSX.Element => {
           </button>
         </div>
 
-        <h1 className="font-bold text-lg text-slate-800 cursor-pointer hover:bg-black/10 px-2 rounded-md transition-colors no-drag">
+        <h1 className="font-bold text-lg text-slate-800 cursor-pointer hover:bg-black/10 px-2 rounded-md transition-colors">
           {dayjs(currentMonth).format('YYYY年 M月')}
         </h1>
 
@@ -101,7 +100,7 @@ export const PopupCalendar: React.FC = (): React.JSX.Element => {
           <button
             title="下一月 (↓)"
             onClick={goToNextMonth}
-            className="p-1 rounded-md hover:bg-black/10 transition-colors no-drag"
+            className="p-1 rounded-md hover:bg-black/10 transition-colors"
           >
             <svg
               className="w-4 h-4 text-slate-600"
@@ -115,7 +114,7 @@ export const PopupCalendar: React.FC = (): React.JSX.Element => {
           <button
             title="下一年 (→)"
             onClick={goToNextYear}
-            className="p-1 rounded-md hover:bg-black/10 transition-colors no-drag"
+            className="p-1 rounded-md hover:bg-black/10 transition-colors"
           >
             <svg
               className="w-4 h-4 text-slate-600"

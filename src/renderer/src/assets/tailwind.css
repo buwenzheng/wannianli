@@ -105,4 +105,13 @@
   .dark .calendar-shadow {
     @apply shadow-gray-900/50;
   }
+
+  /* 拖拽相关工具类 */
+  .draggable {
+    -webkit-app-region: drag;
+  }
+
+  .no-drag {
+    -webkit-app-region: no-drag;
+  }
 }

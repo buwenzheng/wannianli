@@ -146,7 +146,7 @@ export function createCalendarPopupWindow(): BrowserWindow {
     x: x,
     y: y,
     show: false,
-    frame: isDev, // 开发环境显示边框，方便拖动和调试
+    frame: false, // 无边框窗口
     alwaysOnTop: !isDev, // 开发环境不置顶，方便调试
     skipTaskbar: !isDev, // 开发环境显示在任务栏
     resizable: isDev, // 开发环境可调整大小
