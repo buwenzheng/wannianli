@@ -2,7 +2,7 @@ import { BrowserWindow, screen } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import icon from '@resources/icon.png?asset'
-import { CALENDAR_POPUP_WINDOW, MAIN_WINDOW, SETTINGS_WINDOW } from '@main-constants/window'
+import { CALENDAR_POPUP_WINDOW, MAIN_WINDOW, SETTINGS_WINDOW } from '@main/constants'
 
 /**
  * 窗口管理模块

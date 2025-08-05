@@ -2,7 +2,7 @@ import React from 'react'
 import { useSettings, useAutoLaunch, useTheme } from '@hooks/useSettings'
 import { Icon } from '@components/ui/Icon'
 import { IconButton } from '@components/ui/IconButton'
-import { flatIcons } from '@renderer/constants/icons'
+import { flatIcons, type LucideIcon } from '@renderer/constants/icons'
 
 /**
  * 设置窗口主组件
@@ -44,7 +44,7 @@ export const SettingsWindow: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
       {/* 标题栏 */}
-      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4 draggable">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Icon
@@ -60,7 +60,7 @@ export const SettingsWindow: React.FC = () => {
               onClick={resetSettings}
               size="sm"
               variant="ghost"
-              className="text-gray-500 hover:text-red-600"
+              className="text-gray-500 hover:text-red-600 no-drag"
               title="重置所有设置"
             />
           </div>
@@ -218,7 +218,7 @@ export const SettingsWindow: React.FC = () => {
 // 设置卡片组件
 interface SettingsCardProps {
   title: string
-  icon: string
+  icon: LucideIcon
   description: string
   children: React.ReactNode
 }
@@ -240,7 +240,7 @@ const SettingsCard: React.FC<SettingsCardProps> = ({ title, icon, description, c
 interface SettingsItemProps {
   label: string
   description: string
-  icon: string
+  icon: LucideIcon
   children: React.ReactNode
 }
 

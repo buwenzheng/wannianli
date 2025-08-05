@@ -1,5 +1,5 @@
 import React from 'react'
-import type { CalendarProps } from '../../types/calendar'
+import type { CalendarProps } from '../../types'
 import { useCalendar } from '@hooks/useCalendar'
 import CalendarHeader from '@components/Calendar/CalendarHeader'
 import CalendarGrid from '@components/Calendar/CalendarGrid'

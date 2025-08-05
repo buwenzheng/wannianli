@@ -25,7 +25,7 @@ if (!fs.existsSync(iconsDir)) {
  * @param {number} size - 图标尺寸
  * @returns {string} SVG字符串
  */
-function generateSVGIcon(day, size = 18) {
+function generateSVGIcon(day, size = 30) {
   const dayStr = day.toString()
 
   // 将原始SVG适配到我们的尺寸，使用viewBox进行缩放
@@ -38,7 +38,7 @@ function generateSVGIcon(day, size = 18) {
   <!-- 日期数字显示在日历下半部分中央 -->
   <text x="512" y="700" 
         font-family="-apple-system, SF Pro Display, Helvetica, Arial, sans-serif" 
-        font-size="520" 
+        font-size="600" 
         font-weight="700"
         text-anchor="middle" 
         dominant-baseline="middle"

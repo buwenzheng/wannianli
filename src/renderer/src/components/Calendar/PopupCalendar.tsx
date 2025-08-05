@@ -51,12 +51,12 @@ export const PopupCalendar: React.FC = (): React.JSX.Element => {
       )}
     >
       {/* 顶部导航 */}
-      <header className="p-4 flex justify-between items-center shrink-0">
+      <header className="p-4 flex justify-between items-center shrink-0 draggable">
         <div className="flex items-center gap-1">
           <button
             title="上一年 (←)"
             onClick={goToPrevYear}
-            className="p-1 rounded-md hover:bg-black/10 transition-colors"
+            className="p-1 rounded-md hover:bg-black/10 transition-colors no-drag"
           >
             <svg
               className="w-4 h-4 text-slate-600"
@@ -75,7 +75,7 @@ export const PopupCalendar: React.FC = (): React.JSX.Element => {
           <button
             title="上一月 (↑)"
             onClick={goToPrevMonth}
-            className="p-1 rounded-md hover:bg-black/10 transition-colors"
+            className="p-1 rounded-md hover:bg-black/10 transition-colors no-drag"
           >
             <svg
               className="w-4 h-4 text-slate-600"
@@ -93,7 +93,7 @@ export const PopupCalendar: React.FC = (): React.JSX.Element => {
           </button>
         </div>
 
-        <h1 className="font-bold text-lg text-slate-800 cursor-pointer hover:bg-black/10 px-2 rounded-md transition-colors">
+        <h1 className="font-bold text-lg text-slate-800 cursor-pointer hover:bg-black/10 px-2 rounded-md transition-colors no-drag">
           {dayjs(currentMonth).format('YYYY年 M月')}
         </h1>
 
@@ -101,7 +101,7 @@ export const PopupCalendar: React.FC = (): React.JSX.Element => {
           <button
             title="下一月 (↓)"
             onClick={goToNextMonth}
-            className="p-1 rounded-md hover:bg-black/10 transition-colors"
+            className="p-1 rounded-md hover:bg-black/10 transition-colors no-drag"
           >
             <svg
               className="w-4 h-4 text-slate-600"
@@ -115,7 +115,7 @@ export const PopupCalendar: React.FC = (): React.JSX.Element => {
           <button
             title="下一年 (→)"
             onClick={goToNextYear}
-            className="p-1 rounded-md hover:bg-black/10 transition-colors"
+            className="p-1 rounded-md hover:bg-black/10 transition-colors no-drag"
           >
             <svg
               className="w-4 h-4 text-slate-600"

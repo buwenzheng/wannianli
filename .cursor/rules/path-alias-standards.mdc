@@ -1,0 +1,291 @@
+# 路径别名引用规范
+
+## 概述
+
+为了提高代码的可维护性和可读性，项目使用路径别名来替代复杂的相对路径引用。所有进程（main、preload、renderer）都配置了相应的别名，以确保代码的一致性和简洁性。
+
+## 配置文件
+
+### 1. Vite 配置 (`electron.vite.config.ts`)
+```typescript
+export default defineConfig({
+  main: {
+    resolve: {
+      alias: {
+        '@main': resolve('src/main'),
+        '@main-core': resolve('src/main/core'),
+        '@main-constants': resolve('src/main/constants'),
+        '@main-features': resolve('src/main/features'),
+        '@main-services': resolve('src/main/services'),
+        '@main-utils': resolve('src/main/utils'),
+        '@shared': resolve('src/shared'),
+        '@resources': resolve('resources')
+      }
+    }
+  },
+  preload: {
+    resolve: {
+      alias: {
+        '@preload': resolve('src/preload'),
+        '@preload-api': resolve('src/preload/api'),
+        '@preload-utils': resolve('src/preload/utils'),
+        '@main': resolve('src/main'),
+        '@main-core': resolve('src/main/core'),
+        '@main-constants': resolve('src/main/constants'),
+        '@shared': resolve('src/shared'),
+        '@resources': resolve('resources')
+      }
+    }
+  },
+  renderer: {
+    resolve: {
+      alias: {
+        '@renderer': resolve('src/renderer/src'),
+        '@components': resolve('src/renderer/src/components'),
+        '@features': resolve('src/renderer/src/features'),
+        '@utils': resolve('src/renderer/src/utils'),
+        '@types': resolve('src/renderer/src/types'),
+        '@stores': resolve('src/renderer/src/stores'),
+        '@hooks': resolve('src/renderer/src/hooks'),
+        '@layouts': resolve('src/renderer/src/layouts'),
+        '@pages': resolve('src/renderer/src/pages'),
+        '@shared': resolve('src/shared')
+      }
+    }
+  }
+})
+```
+
+### 2. TypeScript 配置
+
+#### tsconfig.node.json (main + preload)
+```json
+{
+  "include": ["electron.vite.config.*", "src/main/**/*", "src/preload/**/*", "src/shared/**/*"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@main": ["src/main"],
+      "@main/*": ["src/main/*"],
+      "@main-core": ["src/main/core"],
+      "@main-core/*": ["src/main/core/*"],
+      "@main-constants": ["src/main/constants"],
+      "@main-constants/*": ["src/main/constants/*"],
+      "@main-features": ["src/main/features"],
+      "@main-features/*": ["src/main/features/*"],
+      "@main-services": ["src/main/services"],
+      "@main-services/*": ["src/main/services/*"],
+      "@main-utils": ["src/main/utils"],
+      "@main-utils/*": ["src/main/utils/*"],
+      "@preload": ["src/preload"],
+      "@preload/*": ["src/preload/*"],
+      "@preload-api": ["src/preload/api"],
+      "@preload-api/*": ["src/preload/api/*"],
+      "@preload-utils": ["src/preload/utils"],
+      "@preload-utils/*": ["src/preload/utils/*"],
+      "@shared": ["src/shared"],
+      "@shared/*": ["src/shared/*"],
+      "@resources": ["resources"],
+      "@resources/*": ["resources/*"]
+    }
+  }
+}
+```
+
+#### tsconfig.web.json (renderer)
+```json
+{
+  "include": [
+    "src/renderer/src/**/*",
+    "src/preload/*.d.ts",
+    "src/shared/**/*"
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@renderer/*": ["src/renderer/src/*"],
+      "@components/*": ["src/renderer/src/components/*"],
+      "@features/*": ["src/renderer/src/features/*"],
+      "@utils/*": ["src/renderer/src/utils/*"],
+      "@types/*": ["src/renderer/src/types/*"],
+      "@stores/*": ["src/renderer/src/stores/*"],
+      "@hooks/*": ["src/renderer/src/hooks/*"],
+      "@layouts/*": ["src/renderer/src/layouts/*"],
+      "@pages/*": ["src/renderer/src/pages/*"],
+      "@shared": ["src/shared"],
+      "@shared/*": ["src/shared/*"]
+    }
+  }
+}
+```
+
+## 别名定义
+
+### Main 进程
+| 别名 | 路径 | 用途 |
+|-----|------|------|
+| `@main` | `src/main` | Main 进程根目录 |
+
+### Preload 进程
+| 别名 | 路径 | 用途 |
+|-----|------|------|
+| `@preload` | `src/preload` | Preload 进程根目录 |
+
+### Renderer 进程
+| 别名 | 路径 | 用途 |
+|-----|------|------|
+| `@renderer` | `src/renderer/src` | Renderer 进程根目录 |
+| `@components` | `src/renderer/src/components` | React 组件 |
+| `@utils` | `src/renderer/src/utils` | 工具函数 |
+| `@hooks` | `src/renderer/src/hooks` | React Hooks |
+
+### 共享别名
+| 别名 | 路径 | 用途 |
+|-----|------|------|
+| `@shared` | `src/shared` | 跨进程共享代码 |
+| `@resources` | `resources` | 静态资源文件 |
+
+## 使用规范
+
+### 1. 导入语句规范
+
+#### ✅ 正确示例
+```typescript
+// Main 进程
+import { createMainWindow } from '@main/window'
+import { MAIN_WINDOW } from '@main/constants'
+import { getSettingsManager } from '@main/settings'
+
+// Preload 进程
+import { windowApi, settingsApi } from '@preload/api'
+
+// Renderer 进程
+import { PopupCalendar } from '@components/Calendar/PopupCalendar'
+import { useCalendar } from '@hooks/useCalendar'
+import { formatDate } from '@utils/dateUtils'
+import type { CalendarProps } from '@renderer/types'
+
+// 共享类型
+import type { AppSettings } from '@shared/types'
+```
+
+#### ❌ 避免的写法
+```typescript
+// 不要使用相对路径
+import { createMainWindow } from './core/window'
+import { PopupCalendar } from '../Calendar/PopupCalendar'
+import { useCalendar } from '../../hooks/useCalendar'
+import type { AppSettings } from '../../../main/core/simpleSettings'
+```
+
+### 2. 类型导入规范
+
+#### 类型导入使用 `import type`
+```typescript
+// ✅ 正确
+import type { AppSettings } from '@shared/types'
+import type { CalendarProps } from '@types/calendar'
+import type { LunarData } from '@hooks/useLunarDate'
+
+// ❌ 错误
+import { AppSettings } from '@shared/types'
+```
+
+#### 跨进程类型共享
+```typescript
+// 共享类型定义在 src/shared/types.ts
+export interface AppSettings {
+  general: {
+    autoLaunch: boolean
+    language: 'zh-CN' | 'en-US'
+    theme: 'light' | 'dark' | 'auto'
+    showLunarCalendar: boolean
+  }
+  // ...
+}
+
+// 在各进程中使用
+import type { AppSettings } from '@shared/types'
+```
+
+### 3. 模块导出规范
+
+#### 统一导出方式
+```typescript
+// index.ts 文件中的统一导出
+export { default as Calendar } from '@components/Calendar/Calendar'
+export { default as CalendarGrid } from '@components/Calendar/CalendarGrid'
+export type { CalendarProps, CalendarDate } from '@types/calendar'
+
+// 使用时
+import { Calendar, CalendarGrid } from '@components/Calendar'
+import type { CalendarProps } from '@components/Calendar'
+```
+
+## 最佳实践
+
+### 1. 优先级规则
+1. **优先使用别名**：始终使用别名而不是相对路径
+2. **类型分离**：使用 `import type` 导入类型
+3. **统一导出**：在 index.ts 中统一导出模块
+
+### 2. 文件组织
+```
+src/
+├── main/           # Main 进程
+│   ├── core/       # 核心功能 (@main-core)
+│   ├── constants/  # 常量 (@main-constants)
+│   ├── features/   # 功能模块 (@main-features)
+│   ├── services/   # 服务层 (@main-services)
+│   └── utils/      # 工具函数 (@main-utils)
+├── preload/        # Preload 进程
+│   ├── api/        # API 定义 (@preload-api)
+│   └── utils/      # 工具函数 (@preload-utils)
+├── renderer/src/   # Renderer 进程
+│   ├── components/ # React 组件 (@components)
+│   ├── hooks/      # React Hooks (@hooks)
+│   ├── utils/      # 工具函数 (@utils)
+│   └── types/      # 类型定义 (@types)
+└── shared/         # 共享代码 (@shared)
+    └── types.ts    # 跨进程类型定义
+```
+
+### 3. 代码审查要点
+- [ ] 是否使用了别名而不是相对路径
+- [ ] 类型导入是否使用了 `import type`
+- [ ] 跨进程类型是否放在 `@shared` 中
+- [ ] 导入语句是否按照约定顺序排列
+
+### 4. 迁移指南
+
+#### 从相对路径迁移到别名
+```bash
+# 1. 检查所有相对路径引用
+grep -r "from ['\"]\.\.\?/" src/
+
+# 2. 逐个文件替换
+# 例如：./core/window → @main-core/window
+# 例如：../../hooks/useCalendar → @hooks/useCalendar
+```
+
+## 注意事项
+
+### 1. IDE 支持
+- 确保 VSCode/Cursor 正确识别别名配置
+- 如果自动补全不工作，检查 TypeScript 配置
+- 重启 TypeScript 服务器：`Cmd+Shift+P` → `TypeScript: Restart TS Server`
+
+### 2. 构建时问题
+- 确保 Vite 和 TypeScript 配置保持同步
+- 检查 `include` 路径是否包含所有必要的目录
+- 注意别名的优先级和匹配规则
+
+### 3. 维护建议
+- 新增目录时同步更新别名配置
+- 定期检查和清理未使用的别名
+- 保持文档与实际配置的同步
+
+## 相关文档
+- [TypeScript 代码规范](./typescript-standards.mdc)
+- [模块组织规范](./module-organization.mdc)
+- [项目结构说明](./project-structure.mdc)

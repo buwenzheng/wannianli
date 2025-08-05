@@ -14,13 +14,8 @@
     "paths": {
       "@renderer/*": ["src/renderer/src/*"],
       "@components/*": ["src/renderer/src/components/*"],
-      "@features/*": ["src/renderer/src/features/*"],
       "@utils/*": ["src/renderer/src/utils/*"],
-      "@types/*": ["src/renderer/src/types/*"],
-      "@stores/*": ["src/renderer/src/stores/*"],
       "@hooks/*": ["src/renderer/src/hooks/*"],
-      "@layouts/*": ["src/renderer/src/layouts/*"],
-      "@pages/*": ["src/renderer/src/pages/*"],
       "@shared": ["src/shared"],
       "@shared/*": ["src/shared/*"]
     }

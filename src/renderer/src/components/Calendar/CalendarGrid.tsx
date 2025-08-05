@@ -1,5 +1,5 @@
 import React from 'react'
-import type { CalendarDate } from '../../types/calendar'
+import type { CalendarDate } from '../../types'
 import { formatLunarDisplay } from '@utils/lunarUtils'
 import { cn } from '@utils/classUtils'
 

@@ -1,10 +1,8 @@
 import { app, shell } from 'electron'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { createMainWindow } from '@main-core/window'
-import { createTray, destroyTray, isTraySupported } from '@main-core/tray'
-import { registerWindowIpcHandlers } from '@main-core/ipc/windowIpc'
-import { registerTrayIpcHandlers } from '@main-core/ipc/trayIpc'
-import { registerSettingsIpcHandlers } from '@main-core/ipc/settingsIpc'
+import { createMainWindow } from '@main/window'
+import { createTray, destroyTray, isTraySupported } from '@main/tray'
+import { registerAllIpcHandlers } from '@main/ipc'
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -28,9 +26,7 @@ app.whenReady().then(async () => {
   }
 
   // 注册IPC处理器
-  registerWindowIpcHandlers()
-  registerTrayIpcHandlers()
-  registerSettingsIpcHandlers()
+  registerAllIpcHandlers()
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
@@ -48,7 +44,7 @@ app.whenReady().then(async () => {
   if (isDev) {
     // 开发环境：直接创建并显示弹出窗口，方便调试
     console.log('🛠️  开发环境：创建调试窗口...')
-    const { createCalendarPopupWindow, showCalendarPopupWindow } = await import('@main-core/window')
+    const { createCalendarPopupWindow, showCalendarPopupWindow } = await import('@main/window')
 
     try {
       createCalendarPopupWindow()

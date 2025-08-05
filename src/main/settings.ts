@@ -176,7 +176,7 @@ class SimpleSettingsManager {
     this.triggerCallbacks(`${category}.${String(key)}`, value, oldValue)
 
     // 特殊处理需要立即生效的设置
-    this.handleSpecialSettings(category, { [key]: value } as Partial<AppSettings[K]>)
+    this.handleSpecialSettings(category, { [key]: value } as unknown as Partial<AppSettings[K]>)
   }
 
   /**

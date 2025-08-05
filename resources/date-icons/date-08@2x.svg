@@ -7,7 +7,7 @@
   <!-- 日期数字显示在日历下半部分中央 -->
   <text x="512" y="700" 
         font-family="-apple-system, SF Pro Display, Helvetica, Arial, sans-serif" 
-        font-size="520" 
+        font-size="600" 
         font-weight="700"
         text-anchor="middle" 
         dominant-baseline="middle"

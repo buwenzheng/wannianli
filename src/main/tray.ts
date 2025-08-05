@@ -5,9 +5,14 @@ import {
   showCalendarPopupWindow,
   hideCalendarPopupWindow,
   toggleCalendarPopupWindow,
-  getCalendarPopupWindow
-} from '@main-core/window'
-import { shouldUpdateIcon, getDateIconNativeImage, getFallbackIconPath } from '@main-core/dateIconManager'
+  getCalendarPopupWindow,
+  createSettingsWindow
+} from '@main/window'
+import {
+  shouldUpdateIcon,
+  getDateIconNativeImage,
+  getFallbackIconPath
+} from '@main/dateIconManager'
 
 /**
  * 系统托盘管理模块

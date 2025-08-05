@@ -39,6 +39,15 @@ import {
   Download,
   Upload,
   RefreshCw,
+  RotateCcw,
+  Play,
+  Palette,
+  Globe,
+  Target,
+  Eye,
+  Cog,
+  Zap,
+  Minimize2,
 
   // 信息类图标
   Info,
@@ -156,8 +165,20 @@ export const flatIcons = {
   // 反馈
   info: Info,
   warning: AlertCircle,
+  alertCircle: AlertCircle,
   success: CheckCircle,
-  error: XCircle
+  error: XCircle,
+
+  // 扩展功能图标
+  rotateCcw: RotateCcw,
+  play: Play,
+  palette: Palette,
+  globe: Globe,
+  target: Target,
+  eye: Eye,
+  cog: Cog,
+  zap: Zap,
+  minimize2: Minimize2
 } as const
 
 // 类型定义

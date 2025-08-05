@@ -111,6 +111,35 @@ export function useSettings(): {
     }
   }, [loadSettings])
 
+  // 导出设置
+  const exportSettings = useCallback(async (): Promise<AppSettings | null> => {
+    try {
+      setError(null)
+      return await window.api.settings.export()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '导出设置失败')
+      console.error('❌ 导出设置失败:', err)
+      return null
+    }
+  }, [])
+
+  // 导入设置
+  const importSettings = useCallback(
+    async (settings: Partial<AppSettings>): Promise<boolean> => {
+      try {
+        setError(null)
+        await window.api.settings.import(settings)
+        await loadSettings() // 重新加载设置
+        return true
+      } catch (err) {
+        setError(err instanceof Error ? err.message : '导入设置失败')
+        console.error('❌ 导入设置失败:', err)
+        return false
+      }
+    },
+    [loadSettings]
+  )
+
   // 初始化时加载设置
   useEffect(() => {
     loadSettings()
@@ -123,6 +152,8 @@ export function useSettings(): {
     updateSettings,
     updateSetting,
     resetSettings,
+    exportSettings,
+    importSettings,
     reload: loadSettings
   }
 }
@@ -134,6 +165,7 @@ export function useAutoLaunch(): {
   enabled: boolean
   loading: boolean
   error: string | null
+  setAutoLaunch: (enable: boolean) => Promise<boolean>
   toggle: () => Promise<boolean>
   reload: () => Promise<void>
 } {
@@ -180,6 +212,7 @@ export function useAutoLaunch(): {
     loading,
     error,
     setAutoLaunch,
+    toggle: async () => await setAutoLaunch(!enabled),
     reload: loadStatus
   }
 }
@@ -228,6 +261,9 @@ export function useTheme(): {
       mediaQuery.addEventListener('change', handleChange)
       return () => mediaQuery.removeEventListener('change', handleChange)
     }
+
+    // 显式返回 undefined 表示没有清理函数
+    return undefined
   }, [theme])
 
   return {
