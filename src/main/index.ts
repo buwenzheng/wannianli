@@ -1,9 +1,10 @@
 import { app, shell } from 'electron'
-import { electronApp, optimizer } from '@electron-toolkit/utils'
+import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createMainWindow } from './core/window'
 import { createTray, destroyTray, isTraySupported } from './core/tray'
 import { registerWindowIpcHandlers } from './core/ipc/windowIpc'
 import { registerTrayIpcHandlers } from './core/ipc/trayIpc'
+import { registerSettingsIpcHandlers } from './core/ipc/settingsIpc'
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -12,14 +13,24 @@ app.whenReady().then(async () => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron.wannianli')
 
-  // 设置为菜单栏应用（macOS 不在 dock 显示）
-  if (process.platform === 'darwin' && app.dock) {
-    app.dock.hide()
+  // 检查是否为开发环境
+  const isDev = is.dev
+
+  // 根据环境决定应用行为
+  if (isDev) {
+    // 开发环境：显示在 dock 中，方便调试
+    console.log('🛠️  开发环境：启用调试模式')
+  } else {
+    // 生产环境：设置为菜单栏应用（macOS 不在 dock 显示）
+    if (process.platform === 'darwin' && app.dock) {
+      app.dock.hide()
+    }
   }
 
   // 注册IPC处理器
   registerWindowIpcHandlers()
   registerTrayIpcHandlers()
+  registerSettingsIpcHandlers()
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
@@ -33,11 +44,23 @@ app.whenReady().then(async () => {
     })
   })
 
-  // 菜单栏应用不需要在启动时创建主窗口
-  // 只通过托盘点击来显示弹出窗口
+  // 根据环境决定窗口创建策略
+  if (isDev) {
+    // 开发环境：直接创建并显示弹出窗口，方便调试
+    console.log('🛠️  开发环境：创建调试窗口...')
+    const { createCalendarPopupWindow, showCalendarPopupWindow } = await import('./core/window')
 
-  // 创建系统托盘 - 按照官方示例在whenReady之后创建
-  console.log('🍎 启动菜单栏应用，创建系统托盘...')
+    try {
+      createCalendarPopupWindow()
+      await showCalendarPopupWindow()
+      console.log('✅ 调试窗口创建成功')
+    } catch (error) {
+      console.error('❌ 调试窗口创建失败:', error)
+    }
+  }
+
+  // 创建系统托盘（开发和生产环境都需要）
+  console.log('🍎 创建系统托盘...')
   try {
     if (isTraySupported()) {
       const trayResult = await createTray()
@@ -48,13 +71,17 @@ app.whenReady().then(async () => {
       }
     } else {
       console.warn('⚠️  当前系统不支持系统托盘')
-      // 如果不支持托盘，创建主窗口作为降级方案
-      createMainWindow()
+      // 如果不支持托盘且非开发环境，创建主窗口作为降级方案
+      if (!isDev) {
+        createMainWindow()
+      }
     }
   } catch (error) {
     console.error('❌ 创建系统托盘时发生错误:', error)
-    // 托盘创建失败，创建主窗口作为降级方案
-    createMainWindow()
+    // 托盘创建失败且非开发环境，创建主窗口作为降级方案
+    if (!isDev) {
+      createMainWindow()
+    }
   }
 
   app.on('activate', function () {

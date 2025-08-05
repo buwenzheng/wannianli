@@ -180,8 +180,7 @@ export async function updateTrayMenu(): Promise<void> {
       label: '设置',
       type: 'normal',
       click: () => {
-        // TODO: 打开设置窗口
-        console.log('打开设置')
+        createSettingsWindow()
       },
       accelerator: 'CmdOrCtrl+,'
     },

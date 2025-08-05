@@ -16,6 +16,8 @@ interface UseCalendarReturn {
   calendarDates: CalendarDate[]
   goToPrevMonth: () => void
   goToNextMonth: () => void
+  goToPrevYear: () => void
+  goToNextYear: () => void
   goToToday: () => void
   selectDate: (date: Date) => void
   setCurrentMonth: (date: Date) => void
@@ -69,6 +71,14 @@ export function useCalendar({
     setCurrentMonth((prev) => dayjs(prev).add(1, 'month').toDate())
   }
 
+  const goToPrevYear = (): void => {
+    setCurrentMonth((prev) => dayjs(prev).subtract(1, 'year').toDate())
+  }
+
+  const goToNextYear = (): void => {
+    setCurrentMonth((prev) => dayjs(prev).add(1, 'year').toDate())
+  }
+
   const goToToday = (): void => {
     const today = new Date()
     setCurrentMonth(today)
@@ -89,6 +99,8 @@ export function useCalendar({
     calendarDates,
     goToPrevMonth,
     goToNextMonth,
+    goToPrevYear,
+    goToNextYear,
     goToToday,
     selectDate,
     setCurrentMonth

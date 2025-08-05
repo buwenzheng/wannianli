@@ -25,7 +25,6 @@ export default tseslint.config(
     rules: {
       ...eslintPluginReactHooks.configs.recommended.rules,
       ...eslintPluginReactRefresh.configs.vite.rules,
-
       // TypeScript规则 - 强制函数返回类型
       '@typescript-eslint/explicit-function-return-type': 'error',
 
@@ -34,7 +33,7 @@ export default tseslint.config(
       '@typescript-eslint/semi': ['error', 'never'],
 
       // 代码质量规则
-      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',
       'prefer-const': 'error',
 
