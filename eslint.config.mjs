@@ -1,11 +1,13 @@
-import tseslint from '@electron-toolkit/eslint-config-ts'
-import eslintConfigPrettier from '@electron-toolkit/eslint-config-prettier'
+import eslint from '@eslint/js'
+import tseslint from 'typescript-eslint'
+import eslintConfigPrettier from 'eslint-config-prettier'
 import eslintPluginReact from 'eslint-plugin-react'
 import eslintPluginReactHooks from 'eslint-plugin-react-hooks'
 import eslintPluginReactRefresh from 'eslint-plugin-react-refresh'
 
 export default tseslint.config(
-  { ignores: ['**/node_modules', '**/dist', '**/out'] },
+  { ignores: ['**/node_modules', '**/dist', '**/src-tauri'] },
+  eslint.configs.recommended,
   tseslint.configs.recommended,
   eslintPluginReact.configs.flat.recommended,
   eslintPluginReact.configs.flat['jsx-runtime'],
@@ -25,22 +27,14 @@ export default tseslint.config(
     rules: {
       ...eslintPluginReactHooks.configs.recommended.rules,
       ...eslintPluginReactRefresh.configs.vite.rules,
-      // TypeScript规则 - 强制函数返回类型
       '@typescript-eslint/explicit-function-return-type': 'error',
-
-      // 分号规则 - 禁用分号
       semi: ['error', 'never'],
-      '@typescript-eslint/semi': ['error', 'never'],
-
-      // 代码质量规则
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',
       'prefer-const': 'error',
-
-      // React规则优化
-      'react/jsx-uses-react': 'off', // React 17+
-      'react/react-in-jsx-scope': 'off', // React 17+
-      'react/prop-types': 'off' // 使用TypeScript替代PropTypes
+      'react/jsx-uses-react': 'off',
+      'react/react-in-jsx-scope': 'off',
+      'react/prop-types': 'off'
     }
   },
   eslintConfigPrettier
