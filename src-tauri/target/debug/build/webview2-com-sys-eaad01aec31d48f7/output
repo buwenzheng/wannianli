@@ -1,2 +1,0 @@
-cargo:rustc-link-search=native=D:\Project\ost\wannianli\src-tauri\target\debug\build\webview2-com-sys-eaad01aec31d48f7\out\x64
-cargo:rustc-link-lib=advapi32
