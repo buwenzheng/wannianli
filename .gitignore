@@ -1,6 +1,20 @@
 node_modules
 dist
 out
+
+# OS / editor
 .DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
 .eslintcache
 *.log*
+
+# Tauri / Rust build artifacts
+src-tauri/target/
+src-tauri/gen/
+
+# Cursor / tooling cache
+.cursor/terminals/
