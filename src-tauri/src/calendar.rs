@@ -498,14 +498,14 @@ pub async fn get_calendar_data_batch_async(
         // 网络失败时降级为 None（仅周末规则），避免整批数据失败
         let data = match data_result {
             Ok(Ok(v)) => v,
-            Ok(Err(e)) => {
+            Ok(Err(_e)) => {
                 #[cfg(debug_assertions)]
-                println!("[holiday] year={} load error: {}", yr, e);
+                println!("[holiday] year={} load error: {}", yr, _e);
                 None
             }
-            Err(e) => {
+            Err(_e) => {
                 #[cfg(debug_assertions)]
-                println!("[holiday] year={} task join error: {}", yr, e);
+                println!("[holiday] year={} task join error: {}", yr, _e);
                 None
             }
         };
@@ -560,14 +560,14 @@ pub async fn get_next_holiday_async(
         // 倒计时查询同样采用降级策略：失败则该年视为无在线假日数据
         let data = match data_result {
             Ok(Ok(v)) => v,
-            Ok(Err(e)) => {
+            Ok(Err(_e)) => {
                 #[cfg(debug_assertions)]
-                println!("[holiday] next-holiday year={} load error: {}", yr, e);
+                println!("[holiday] next-holiday year={} load error: {}", yr, _e);
                 None
             }
-            Err(e) => {
+            Err(_e) => {
                 #[cfg(debug_assertions)]
-                println!("[holiday] next-holiday year={} task join error: {}", yr, e);
+                println!("[holiday] next-holiday year={} task join error: {}", yr, _e);
                 None
             }
         };

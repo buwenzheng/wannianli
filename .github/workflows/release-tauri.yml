@@ -1,3 +1,5 @@
+# 本地 IDE 的 GitHub Actions 插件可能因无法访问 GitHub 解析 action 而报 "repository or version not found"，
+# 属误报；实际在 GitHub 上运行正常。修改 workflow 前建议本地先执行 npm run tauri:build 验证打包成功。
 name: "Release Wannianli"
 
 on:
@@ -30,7 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [windows-latest, ubuntu-latest, macos-latest]
+        platform: [windows-latest, macos-latest]
 
     runs-on: ${{ matrix.platform }}
 
