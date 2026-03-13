@@ -1,5 +1,10 @@
 use chrono::{Datelike, NaiveDate, Weekday};
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
+
+use crate::holiday;
+use crate::holiday::YearHolidayData;
 
 // ==================== Data Types ====================
 
@@ -15,12 +20,25 @@ pub struct LunarInfo {
     pub zodiac: String,
 }
 
+/// 日期类型：法定假日 / 普通周末 / 工作日（含调休上班）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum HolidayKind {
+    #[serde(rename = "statutory")]
+    Statutory,
+    #[serde(rename = "weekend")]
+    Weekend,
+    #[serde(rename = "workday")]
+    Workday,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HolidayInfo {
     pub is_holiday: bool,
     pub is_workday: bool,
     pub holiday_name: Option<String>,
+    pub holiday_kind: HolidayKind,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -299,45 +317,7 @@ fn term_festivals(year: i32, month: u32, day: u32) -> Vec<String> {
     f
 }
 
-// ==================== Statutory Holidays ====================
-
-struct HolidayRange {
-    name: &'static str,
-    start: (u32, u32),
-    end: (u32, u32),
-}
-
-fn statutory_holidays(year: i32) -> (Vec<HolidayRange>, Vec<(u32, u32)>) {
-    match year {
-        2025 => (
-            vec![
-                HolidayRange { name: "元旦", start: (1, 1), end: (1, 1) },
-                HolidayRange { name: "春节", start: (1, 28), end: (2, 4) },
-                HolidayRange { name: "清明", start: (4, 4), end: (4, 6) },
-                HolidayRange { name: "劳动节", start: (5, 1), end: (5, 5) },
-                HolidayRange { name: "端午", start: (5, 31), end: (6, 2) },
-                HolidayRange { name: "国庆+中秋", start: (10, 1), end: (10, 8) },
-            ],
-            vec![(1, 26), (2, 8), (4, 27), (9, 28), (10, 11)],
-        ),
-        _ => (vec![], vec![]),
-    }
-}
-
-fn in_holiday_range(ranges: &[HolidayRange], m: u32, d: u32) -> Option<&str> {
-    for h in ranges {
-        let after_start = m > h.start.0 || (m == h.start.0 && d >= h.start.1);
-        let before_end = m < h.end.0 || (m == h.end.0 && d <= h.end.1);
-        if after_start && before_end {
-            return Some(h.name);
-        }
-    }
-    None
-}
-
-fn is_adjusted_workday(workdays: &[(u32, u32)], m: u32, d: u32) -> bool {
-    workdays.iter().any(|&(wm, wd)| wm == m && wd == d)
-}
+// ==================== Statutory Holidays (holiday.rs) ====================
 
 // ==================== Public API ====================
 
@@ -377,26 +357,87 @@ pub fn get_solar_terms(year: i32, _month: u32, day: u32) -> Result<Vec<String>, 
     Ok(solar_terms_on(year, _month, day))
 }
 
-pub fn get_holiday_info(year: i32, month: u32, day: u32) -> Result<HolidayInfo, String> {
+/// 在已有年度数据下计算某日的假日信息（不触发网络）
+fn get_holiday_info_with_data(
+    data_opt: Option<&YearHolidayData>,
+    year: i32,
+    month: u32,
+    day: u32,
+) -> Result<HolidayInfo, String> {
     let date = NaiveDate::from_ymd_opt(year, month, day).ok_or("Invalid date")?;
     let weekend = matches!(date.weekday(), Weekday::Sat | Weekday::Sun);
 
-    let (ranges, workdays) = statutory_holidays(year);
-    let in_range = in_holiday_range(&ranges, month, day);
-    let adjusted = is_adjusted_workday(&workdays, month, day);
+    match data_opt {
+        Some(data) => {
+            let adjusted = holiday::is_adjusted_workday(&data.adjustments, year, month, day);
+            let explicit_holiday = holiday::is_adjusted_holiday(&data.adjustments, year, month, day);
 
-    let is_holiday = if adjusted { false } else { in_range.is_some() || weekend };
-    let is_workday = adjusted;
+            let is_workday = adjusted;
+            // 语义约定：
+            // - '+' 表示这一天放假（法定/调休假），不管是不是周末
+            // - '-' 表示这一天要上班（哪怕是周末）
+            // - 其他情况下，周末为休息日，工作日为上班日
+            let is_statutory = !adjusted && explicit_holiday;
+            let is_holiday = if adjusted {
+                false
+            } else if explicit_holiday {
+                true
+            } else {
+                weekend
+            };
 
-    let holiday_name = in_range
-        .map(|n| n.to_string())
-        .or_else(|| {
-            let fests = get_festivals(year, month, day).unwrap_or_default();
-            fests.first().cloned()
-        })
-        .or_else(|| if weekend && !adjusted { Some("周末".into()) } else { None });
+            let holiday_kind = if is_workday {
+                HolidayKind::Workday
+            } else if is_statutory {
+                HolidayKind::Statutory
+            } else if weekend {
+                HolidayKind::Weekend
+            } else {
+                HolidayKind::Workday
+            };
 
-    Ok(HolidayInfo { is_holiday, is_workday, holiday_name })
+            let holiday_name = (if explicit_holiday {
+                let fests = get_festivals(year, month, day).unwrap_or_default();
+                fests.first().cloned()
+            } else {
+                None
+            })
+                .or_else(|| if weekend && !adjusted { Some("周末".into()) } else { None });
+
+            Ok(HolidayInfo {
+                is_holiday,
+                is_workday,
+                holiday_name,
+                holiday_kind,
+            })
+        }
+        None => {
+            let is_holiday = weekend;
+            let is_workday = false;
+            let holiday_kind = if weekend {
+                HolidayKind::Weekend
+            } else {
+                HolidayKind::Workday
+            };
+            let holiday_name = if weekend { Some("周末".into()) } else { None };
+            Ok(HolidayInfo {
+                is_holiday,
+                is_workday,
+                holiday_name,
+                holiday_kind,
+            })
+        }
+    }
+}
+
+pub fn get_holiday_info(
+    app_data_dir: Option<&std::path::PathBuf>,
+    year: i32,
+    month: u32,
+    day: u32,
+) -> Result<HolidayInfo, String> {
+    let data_opt = holiday::get_year_holiday_data(app_data_dir, year).ok().flatten();
+    get_holiday_info_with_data(data_opt.as_ref(), year, month, day)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -406,43 +447,131 @@ pub struct NextHoliday {
     pub days: i64,
 }
 
-pub fn get_next_holiday(year: i32, month: u32, day: u32) -> Result<Option<NextHoliday>, String> {
+fn compute_next_holiday_from_data(
+    year_data: &HashMap<i32, Option<YearHolidayData>>,
+    year: i32,
+    month: u32,
+    day: u32,
+) -> Result<Option<NextHoliday>, String> {
     let today = NaiveDate::from_ymd_opt(year, month, day).ok_or("Invalid date")?;
 
     for yr in [year, year + 1] {
-        let (ranges, _) = statutory_holidays(yr);
-        for h in &ranges {
-            let start = NaiveDate::from_ymd_opt(yr, h.start.0, h.start.1)
-                .ok_or("Invalid holiday date")?;
-            let end = NaiveDate::from_ymd_opt(yr, h.end.0, h.end.1)
-                .ok_or("Invalid holiday date")?;
-            if today >= start && today <= end {
-                return Ok(Some(NextHoliday { name: h.name.into(), days: 0 }));
-            }
-            if today < start {
-                return Ok(Some(NextHoliday {
-                    name: h.name.into(),
-                    days: (start - today).num_days(),
-                }));
+        if let Some(Some(data)) = year_data.get(&yr) {
+            for r in &data.ranges {
+                let start = NaiveDate::from_ymd_opt(yr, r.start_month, r.start_day);
+                let end = NaiveDate::from_ymd_opt(yr, r.end_month, r.end_day);
+                if let (Some(st), Some(ed)) = (start, end) {
+                    if today >= st && today <= ed {
+                        return Ok(Some(NextHoliday {
+                            name: r.name.clone(),
+                            days: 0,
+                        }));
+                    }
+                    if today < st {
+                        return Ok(Some(NextHoliday {
+                            name: r.name.clone(),
+                            days: (st - today).num_days(),
+                        }));
+                    }
+                }
             }
         }
     }
     Ok(None)
 }
 
-pub fn get_calendar_data_batch(dates: Vec<(i32, u32, u32)>) -> Result<Vec<DayCalendarData>, String> {
-    dates
-        .iter()
-        .map(|&(y, m, d)| {
-            Ok(DayCalendarData {
-                year: y,
-                month: m,
-                day: d,
-                lunar_info: get_lunar_info(y, m, d)?,
-                holiday_info: get_holiday_info(y, m, d)?,
-                festivals: get_festivals(y, m, d)?,
-                solar_terms: get_solar_terms(y, m, d)?,
-            })
+/// 异步批量获取日历数据：网络拉取在后台线程执行，不阻塞 UI
+pub async fn get_calendar_data_batch_async(
+    app_data_dir: Option<PathBuf>,
+    dates: Vec<(i32, u32, u32)>,
+) -> Result<Vec<DayCalendarData>, String> {
+    let years: Vec<i32> = dates.iter().map(|&(y, _, _)| y).collect::<HashSet<_>>().into_iter().collect();
+
+    let mut year_data: HashMap<i32, Option<YearHolidayData>> = HashMap::new();
+    for yr in years {
+        let dir = app_data_dir.clone();
+        let data_result = tauri::async_runtime::spawn_blocking(move || {
+            holiday::get_year_holiday_data(dir.as_ref(), yr)
         })
-        .collect()
+        .await;
+
+        // 网络失败时降级为 None（仅周末规则），避免整批数据失败
+        let data = match data_result {
+            Ok(Ok(v)) => v,
+            Ok(Err(e)) => {
+                #[cfg(debug_assertions)]
+                println!("[holiday] year={} load error: {}", yr, e);
+                None
+            }
+            Err(e) => {
+                #[cfg(debug_assertions)]
+                println!("[holiday] year={} task join error: {}", yr, e);
+                None
+            }
+        };
+        #[cfg(debug_assertions)]
+        {
+            if let Some(ref d) = data {
+                println!(
+                    "[holiday] year={} loaded adjustments={} ranges={}",
+                    yr,
+                    d.adjustments.len(),
+                    d.ranges.len()
+                );
+            } else {
+                println!("[holiday] year={} loaded NONE (fallback weekend only)", yr);
+            }
+        }
+        year_data.insert(yr, data);
+    }
+
+    let mut result = Vec::with_capacity(dates.len());
+    for &(y, m, d) in &dates {
+        let data_opt = year_data.get(&y).and_then(|x| x.as_ref());
+        let holiday_info = get_holiday_info_with_data(data_opt, y, m, d)?;
+        result.push(DayCalendarData {
+            year: y,
+            month: m,
+            day: d,
+            lunar_info: get_lunar_info(y, m, d)?,
+            holiday_info,
+            festivals: get_festivals(y, m, d)?,
+            solar_terms: get_solar_terms(y, m, d)?,
+        });
+    }
+    Ok(result)
+}
+
+/// 异步获取下一假期：网络拉取在后台线程执行，不阻塞 UI
+pub async fn get_next_holiday_async(
+    app_data_dir: Option<PathBuf>,
+    year: i32,
+    month: u32,
+    day: u32,
+) -> Result<Option<NextHoliday>, String> {
+    let mut year_data: HashMap<i32, Option<YearHolidayData>> = HashMap::new();
+    for yr in [year, year + 1] {
+        let dir = app_data_dir.clone();
+        let data_result = tauri::async_runtime::spawn_blocking(move || {
+            holiday::get_year_holiday_data(dir.as_ref(), yr)
+        })
+        .await;
+
+        // 倒计时查询同样采用降级策略：失败则该年视为无在线假日数据
+        let data = match data_result {
+            Ok(Ok(v)) => v,
+            Ok(Err(e)) => {
+                #[cfg(debug_assertions)]
+                println!("[holiday] next-holiday year={} load error: {}", yr, e);
+                None
+            }
+            Err(e) => {
+                #[cfg(debug_assertions)]
+                println!("[holiday] next-holiday year={} task join error: {}", yr, e);
+                None
+            }
+        };
+        year_data.insert(yr, data);
+    }
+    compute_next_holiday_from_data(&year_data, year, month, day)
 }

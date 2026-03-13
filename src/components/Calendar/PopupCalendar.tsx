@@ -202,6 +202,7 @@ export const PopupCalendar: React.FC = (): React.JSX.Element => {
               isWeekend={isWeekendDate}
               isHoliday={isHoliday}
               isWorkday={isWorkday}
+              holidayKind={holidayInfo?.holidayKind}
               lunarText={lunarText}
               onDateSelect={handleDateSelect}
             />

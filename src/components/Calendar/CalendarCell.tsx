@@ -1,4 +1,5 @@
 import React from 'react'
+import type { HolidayKind } from '../../types'
 import { cn } from '../../utils/classUtils'
 
 interface CalendarCellProps {
@@ -9,6 +10,7 @@ interface CalendarCellProps {
   isWeekend: boolean
   isHoliday: boolean
   isWorkday: boolean
+  holidayKind?: HolidayKind
   lunarText: string
   onDateSelect: (date: Date) => void
 }
@@ -18,14 +20,14 @@ export const CalendarCell: React.FC<CalendarCellProps> = ({
   isToday,
   isCurrentMonth,
   isSelected,
-  isWeekend,
   isHoliday,
   isWorkday,
+  holidayKind,
   lunarText,
   onDateSelect,
 }): React.JSX.Element => {
-  const showRest = isHoliday && !isWeekend && isCurrentMonth
-  const showWork = isWorkday && isWeekend && isCurrentMonth
+  const showRest = holidayKind === 'statutory' && isCurrentMonth
+  const showWork = isWorkday && isCurrentMonth
 
   return (
     <button
@@ -36,8 +38,8 @@ export const CalendarCell: React.FC<CalendarCellProps> = ({
         'h-14 w-full rounded-lg transition-all cursor-pointer',
         'hover:bg-black/5 focus:outline-none focus:ring-2 focus:ring-blue-500/50',
         !isCurrentMonth && 'text-slate-400',
-        isCurrentMonth && isWeekend && !isWorkday && 'text-red-500',
-        isCurrentMonth && (!isWeekend || isWorkday) && 'text-slate-700',
+        isCurrentMonth && isHoliday && 'text-red-500',
+        isCurrentMonth && !isHoliday && 'text-slate-700',
         isSelected && 'bg-blue-500 text-white hover:bg-blue-600',
         isToday && !isSelected && 'ring-2 ring-blue-500 bg-blue-50',
       )}

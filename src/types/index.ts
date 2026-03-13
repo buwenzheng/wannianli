@@ -27,10 +27,14 @@ export interface CalendarDate {
   holidayInfo?: HolidayInfo
 }
 
+/** 日期类型：法定假日 / 普通周末 / 工作日（含调休上班） */
+export type HolidayKind = 'statutory' | 'weekend' | 'workday'
+
 export interface HolidayInfo {
   isHoliday: boolean
   isWorkday: boolean
   holidayName?: string
+  holidayKind: HolidayKind
 }
 
 export interface DayCalendarData {

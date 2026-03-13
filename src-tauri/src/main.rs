@@ -4,6 +4,7 @@
 use tauri::Manager;
 
 mod calendar;
+mod holiday;
 mod settings;
 mod tray;
 mod window;
@@ -28,18 +29,34 @@ fn get_solar_terms(year: i32, month: u32, day: u32) -> Result<Vec<String>, Strin
 }
 
 #[tauri::command]
-fn get_holiday_info(year: i32, month: u32, day: u32) -> Result<calendar::HolidayInfo, String> {
-    calendar::get_holiday_info(year, month, day)
+fn get_holiday_info(
+    app: tauri::AppHandle,
+    year: i32,
+    month: u32,
+    day: u32,
+) -> Result<calendar::HolidayInfo, String> {
+    let app_data_dir = app.path().app_data_dir().ok();
+    calendar::get_holiday_info(app_data_dir.as_ref(), year, month, day)
 }
 
 #[tauri::command]
-fn get_calendar_data(dates: Vec<(i32, u32, u32)>) -> Result<Vec<calendar::DayCalendarData>, String> {
-    calendar::get_calendar_data_batch(dates)
+async fn get_calendar_data(
+    app: tauri::AppHandle,
+    dates: Vec<(i32, u32, u32)>,
+) -> Result<Vec<calendar::DayCalendarData>, String> {
+    let app_data_dir = app.path().app_data_dir().ok();
+    calendar::get_calendar_data_batch_async(app_data_dir, dates).await
 }
 
 #[tauri::command]
-fn get_next_holiday(year: i32, month: u32, day: u32) -> Result<Option<calendar::NextHoliday>, String> {
-    calendar::get_next_holiday(year, month, day)
+async fn get_next_holiday(
+    app: tauri::AppHandle,
+    year: i32,
+    month: u32,
+    day: u32,
+) -> Result<Option<calendar::NextHoliday>, String> {
+    let app_data_dir = app.path().app_data_dir().ok();
+    calendar::get_next_holiday_async(app_data_dir, year, month, day).await
 }
 
 fn main() {
