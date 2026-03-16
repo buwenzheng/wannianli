@@ -65,8 +65,8 @@ jobs:
 
     runs-on: ${{ matrix.platform }}
     env:
-      TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-      TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v4
@@ -96,12 +96,20 @@ jobs:
           files: src-tauri/target/release/bundle/nsis/*.exe
           overwrite_files: true
 
-      - name: Upload macOS installer
+      - name: Upload macOS installer (DMG)
         if: matrix.platform == 'macos-latest'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           files: src-tauri/target/release/bundle/dmg/*.dmg
+          overwrite_files: true
+
+      - name: Upload macOS updater bundle (tar.gz)
+        if: matrix.platform == 'macos-latest'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: src-tauri/target/release/bundle/macos/*.app.tar.gz
           overwrite_files: true
 
       - name: Generate latest.json (Windows)

@@ -34,19 +34,23 @@ const version = tag.replace(/^v/i, '')
 
 const bundleDir = path.join('src-tauri', 'target', 'release', 'bundle')
 
-const subDir = platform === 'windows' ? 'nsis' : platform === 'darwin' ? 'dmg' : null
-if (!subDir) {
+const platformConfig = {
+  windows: { subDir: 'nsis', ext: '.exe' },
+  darwin:  { subDir: 'macos', ext: '.app.tar.gz' },
+}
+
+const cfg = platformConfig[platform]
+if (!cfg) {
   console.error(`Unsupported platform: ${platform}`)
   process.exit(1)
 }
 
-const ext = platform === 'windows' ? '.exe' : '.dmg'
-const dir = path.join(bundleDir, subDir)
-
+const dir = path.join(bundleDir, cfg.subDir)
 const files = fs.readdirSync(dir)
-const installer = files.find(f => f.endsWith(ext))
+const installer = files.find(f => f.endsWith(cfg.ext) && !f.endsWith('.sig'))
 if (!installer) {
-  console.error(`No installer (*${ext}) found in ${dir}`)
+  console.error(`No updater bundle (*${cfg.ext}) found in ${dir}`)
+  console.error('Files in directory:', files.join(', '))
   process.exit(1)
 }
 
