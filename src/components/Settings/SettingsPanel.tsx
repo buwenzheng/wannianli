@@ -2,6 +2,7 @@ import React from 'react'
 import type { AppSettings } from '../../types'
 import { cn } from '../../utils/classUtils'
 import { ChevronLeft } from '../Calendar/CalendarIcons'
+import { checkForUpdates } from '../../utils/updater'
 
 interface SettingsPanelProps {
   settings: AppSettings
@@ -132,13 +133,22 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </Section>
       </main>
 
-      <footer className="p-4 border-t border-black/10 shrink-0">
+      <footer className="p-4 border-t border-black/10 shrink-0 flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={onReset}
-          className="w-full py-1.5 text-sm text-red-600 bg-red-50 rounded-lg hover:bg-red-100 cursor-pointer transition-colors"
+          className="flex-1 py-1.5 text-sm text-red-600 bg-red-50 rounded-lg hover:bg-red-100 cursor-pointer transition-colors"
         >
           恢复默认设置
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            void checkForUpdates()
+          }}
+          className="px-3 py-1.5 text-xs text-slate-600 bg-black/5 rounded-lg hover:bg-black/10 cursor-pointer transition-colors"
+        >
+          检查更新
         </button>
       </footer>
     </div>

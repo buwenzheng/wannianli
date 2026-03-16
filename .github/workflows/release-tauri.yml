@@ -64,6 +64,9 @@ jobs:
         platform: [windows-latest, macos-latest]
 
     runs-on: ${{ matrix.platform }}
+    env:
+      TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+      TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v4
@@ -99,4 +102,34 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: src-tauri/target/release/bundle/dmg/*.dmg
+          overwrite_files: true
+
+      - name: Generate latest.json (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: node scripts/generate-latest-json.mjs windows x86_64
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
+      - name: Upload Windows latest.json
+        if: matrix.platform == 'windows-latest'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: src-tauri/target/release/bundle/latest-windows-x86_64.json
+          overwrite_files: true
+
+      - name: Generate latest.json (macOS)
+        if: matrix.platform == 'macos-latest'
+        run: node scripts/generate-latest-json.mjs darwin aarch64
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
+      - name: Upload macOS latest.json
+        if: matrix.platform == 'macos-latest'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: src-tauri/target/release/bundle/latest-darwin-aarch64.json
           overwrite_files: true

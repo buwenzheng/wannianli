@@ -72,6 +72,7 @@ fn main() {
                 let _ = w.set_focus();
             }
         }))
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             // 初始化设置管理器
             let settings_manager = SettingsManager::new(app.handle().clone());
