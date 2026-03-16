@@ -65,8 +65,8 @@ jobs:
 
     runs-on: ${{ matrix.platform }}
     env:
-      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY || secrets.TAURI_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || secrets.TAURI_KEY_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v4
@@ -87,6 +87,18 @@ jobs:
 
       - name: Build Tauri app
         run: npm run tauri:build
+
+      - name: Debug - check signing key and list bundle files
+        if: always()
+        shell: bash
+        run: |
+          if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "TAURI_SIGNING_PRIVATE_KEY is SET (length: ${#TAURI_SIGNING_PRIVATE_KEY})"
+          else
+            echo "WARNING: TAURI_SIGNING_PRIVATE_KEY is EMPTY or NOT SET"
+          fi
+          echo "--- Bundle directory listing ---"
+          find src-tauri/target/release/bundle -type f 2>/dev/null || echo "bundle directory not found"
 
       - name: Upload Windows installer
         if: matrix.platform == 'windows-latest'
