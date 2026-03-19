@@ -1,5 +1,6 @@
 import React from 'react';
 import { PopupCalendar } from './components/Calendar';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 /**
  * 万年历应用主界面
@@ -7,7 +8,9 @@ import { PopupCalendar } from './components/Calendar';
 function App(): React.JSX.Element {
   return (
     <div className="bg-transparent">
-      <PopupCalendar />
+      <ErrorBoundary>
+        <PopupCalendar />
+      </ErrorBoundary>
     </div>
   );
 }

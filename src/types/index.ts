@@ -55,12 +55,9 @@ export interface NextHoliday {
 export interface AppSettings {
   general: {
     autoLaunch: boolean
-    language: string
-    theme: string
   }
   calendar: {
     weekStartsOn: number
-    showWeekNumbers: boolean
     highlightToday: boolean
     showFestivals: boolean
     showSolarTerms: boolean

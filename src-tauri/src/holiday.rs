@@ -47,7 +47,7 @@ fn fetch_holidays_js() -> Result<String, String> {
                 .get(url)
                 .header(
                     reqwest::header::USER_AGENT,
-                    "wannianli/1.0 (+https://github.com/username/wannianli)",
+                    "wannianli/1.0 (+https://github.com/buwenzheng/wannianli)",
                 )
                 .send();
 
@@ -222,6 +222,7 @@ fn save_cached_year(app_data_dir: &PathBuf, year: i32, data: &YearHolidayData) {
 }
 
 /// 获取某年的假日数据：优先缓存，无则拉取并解析后缓存。仅数据源包含的年份返回 Some。
+/// 首次网络拉取时会将解析出的所有年份数据一并写入缓存。
 pub fn get_year_holiday_data(
     app_data_dir: Option<&PathBuf>,
     year: i32,
@@ -237,11 +238,15 @@ pub fn get_year_holiday_data(
 
     let js = fetch_holidays_js()?;
     let (mut by_year, _min, _max) = parse_js_to_year_data(&js);
-    let data = by_year.remove(&year);
-    if let (Some(ref d), Some(ref dir)) = (&data, &dir_opt) {
-        save_cached_year(dir, year, d);
+
+    // 将所有年份的数据都写入缓存，避免同一次网络请求只缓存一年
+    if let Some(ref dir) = dir_opt {
+        for (&yr, data) in &by_year {
+            save_cached_year(dir, yr, data);
+        }
     }
-    Ok(data)
+
+    Ok(by_year.remove(&year))
 }
 
 /// 某日是否为调整表中的调休上班

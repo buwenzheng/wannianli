@@ -13,8 +13,10 @@ import { formatLunarDisplay, getNextHoliday, isWeekend } from '../../utils/lunar
 export const PopupCalendar: React.FC = (): React.JSX.Element => {
   const [showSettings, setShowSettings] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
+  const [countdownKey, setCountdownKey] = useState(0)
   const { settings, save, reset } = useSettings()
 
+  const weekStartsOn = (settings?.calendar.weekStartsOn ?? 0) as 0 | 1
   const {
     currentMonth,
     calendarDates,
@@ -22,11 +24,17 @@ export const PopupCalendar: React.FC = (): React.JSX.Element => {
     goToNextMonth,
     goToPrevYear,
     goToNextYear,
-    goToToday,
+    goToToday: _goToToday,
     selectDate,
   } = useCalendar({
     showLunar: settings?.ui.showLunarInfo ?? true,
+    weekStartsOn,
   })
+
+  const goToToday = useCallback((): void => {
+    _goToToday()
+    setCountdownKey(k => k + 1)
+  }, [_goToToday])
 
   useEffect(() => {
     const unsub1 = listen('show-settings', () => setShowSettings(true))
@@ -103,7 +111,7 @@ export const PopupCalendar: React.FC = (): React.JSX.Element => {
         setCountdownText(`距${r.name}还有 ${r.days} 天`)
       }
     }).catch(() => setCountdownText(''))
-  }, [currentMonth])
+  }, [currentMonth, countdownKey])
 
   const highlightToday = settings?.calendar.highlightToday ?? true
   const showFestivals = settings?.calendar.showFestivals ?? true
@@ -160,13 +168,12 @@ export const PopupCalendar: React.FC = (): React.JSX.Element => {
       </header>
 
       <div className="px-4 py-2 grid grid-cols-7 gap-2 text-center text-xs font-semibold text-slate-500 border-b border-black/10">
-        <div className="text-red-500">日</div>
-        <div>一</div>
-        <div>二</div>
-        <div>三</div>
-        <div>四</div>
-        <div>五</div>
-        <div className="text-red-500">六</div>
+        {['日', '一', '二', '三', '四', '五', '六']
+          .slice(weekStartsOn)
+          .concat(['日', '一', '二', '三', '四', '五', '六'].slice(0, weekStartsOn))
+          .map((d, i) => (
+            <div key={d} className={i === 0 || i === 6 ? 'text-red-500' : ''}>{d}</div>
+          ))}
       </div>
 
       <main
@@ -244,7 +251,7 @@ export const PopupCalendar: React.FC = (): React.JSX.Element => {
             onClick={e => e.stopPropagation()}
           >
             <h2 className="text-lg font-bold text-slate-800 mb-1">万年历</h2>
-            <p className="text-xs text-slate-500 mb-3">v1.0.0</p>
+            <p className="text-xs text-slate-500 mb-3">v{__APP_VERSION__}</p>
             <p className="text-sm text-slate-600 mb-4">轻量级桌面日历工具</p>
             <button
               type="button"

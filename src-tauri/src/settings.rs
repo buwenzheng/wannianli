@@ -17,15 +17,12 @@ pub struct AppSettings {
 #[serde(rename_all = "camelCase")]
 pub struct GeneralSettings {
     pub auto_launch: bool,
-    pub language: String,
-    pub theme: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CalendarSettings {
     pub week_starts_on: u8,
-    pub show_week_numbers: bool,
     pub highlight_today: bool,
     pub show_festivals: bool,
     pub show_solar_terms: bool,
@@ -44,19 +41,16 @@ impl Default for AppSettings {
         Self {
             general: GeneralSettings {
                 auto_launch: false,
-                language: "zh-CN".to_string(),
-                theme: "auto".to_string(),
             },
             calendar: CalendarSettings {
-                week_starts_on: 1, // 周一开始
-                show_week_numbers: false,
+                week_starts_on: 0, // 周日开始
                 highlight_today: true,
                 show_festivals: true,
                 show_solar_terms: true,
             },
             ui: UiSettings {
                 window_opacity: 1.0,
-                enable_glassmorphism: true,
+                enable_glassmorphism: false,
                 show_lunar_info: true,
             },
         }

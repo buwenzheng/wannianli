@@ -6,9 +6,15 @@ import { resolve } from "path";
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
+// 读取 package.json 的 version
+const pkg = await import("./package.json", { with: { type: "json" } }).then(m => m.default);
+
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
   plugins: [react(), tailwindcss()],
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),

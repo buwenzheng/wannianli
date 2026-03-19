@@ -480,21 +480,28 @@ fn compute_next_holiday_from_data(
     Ok(None)
 }
 
-/// 异步批量获取日历数据：网络拉取在后台线程执行，不阻塞 UI
+/// 异步批量获取日历数据：网络拉取在后台线程并行执行，不阻塞 UI
 pub async fn get_calendar_data_batch_async(
     app_data_dir: Option<PathBuf>,
     dates: Vec<(i32, u32, u32)>,
 ) -> Result<Vec<DayCalendarData>, String> {
     let years: Vec<i32> = dates.iter().map(|&(y, _, _)| y).collect::<HashSet<_>>().into_iter().collect();
 
-    let mut year_data: HashMap<i32, Option<YearHolidayData>> = HashMap::new();
-    for yr in years {
-        let dir = app_data_dir.clone();
-        let data_result = tauri::async_runtime::spawn_blocking(move || {
-            holiday::get_year_holiday_data(dir.as_ref(), yr)
+    // 并行加载所有年份的假期数据
+    let handles: Vec<_> = years
+        .iter()
+        .map(|&yr| {
+            let dir = app_data_dir.clone();
+            tauri::async_runtime::spawn_blocking(move || {
+                holiday::get_year_holiday_data(dir.as_ref(), yr)
+            })
         })
-        .await;
+        .collect();
 
+    let results = futures::future::join_all(handles).await;
+
+    let mut year_data: HashMap<i32, Option<YearHolidayData>> = HashMap::new();
+    for (yr, data_result) in years.iter().zip(results) {
         // 网络失败时降级为 None（仅周末规则），避免整批数据失败
         let data = match data_result {
             Ok(Ok(v)) => v,
@@ -522,7 +529,7 @@ pub async fn get_calendar_data_batch_async(
                 println!("[holiday] year={} loaded NONE (fallback weekend only)", yr);
             }
         }
-        year_data.insert(yr, data);
+        year_data.insert(*yr, data);
     }
 
     let mut result = Vec::with_capacity(dates.len());
@@ -542,21 +549,29 @@ pub async fn get_calendar_data_batch_async(
     Ok(result)
 }
 
-/// 异步获取下一假期：网络拉取在后台线程执行，不阻塞 UI
+/// 异步获取下一假期：网络拉取在后台线程并行执行，不阻塞 UI
 pub async fn get_next_holiday_async(
     app_data_dir: Option<PathBuf>,
     year: i32,
     month: u32,
     day: u32,
 ) -> Result<Option<NextHoliday>, String> {
-    let mut year_data: HashMap<i32, Option<YearHolidayData>> = HashMap::new();
-    for yr in [year, year + 1] {
-        let dir = app_data_dir.clone();
-        let data_result = tauri::async_runtime::spawn_blocking(move || {
-            holiday::get_year_holiday_data(dir.as_ref(), yr)
-        })
-        .await;
+    let years = [year, year + 1];
 
+    let handles: Vec<_> = years
+        .iter()
+        .map(|&yr| {
+            let dir = app_data_dir.clone();
+            tauri::async_runtime::spawn_blocking(move || {
+                holiday::get_year_holiday_data(dir.as_ref(), yr)
+            })
+        })
+        .collect();
+
+    let results = futures::future::join_all(handles).await;
+
+    let mut year_data: HashMap<i32, Option<YearHolidayData>> = HashMap::new();
+    for (yr, data_result) in years.iter().zip(results) {
         // 倒计时查询同样采用降级策略：失败则该年视为无在线假日数据
         let data = match data_result {
             Ok(Ok(v)) => v,
@@ -571,7 +586,7 @@ pub async fn get_next_holiday_async(
                 None
             }
         };
-        year_data.insert(yr, data);
+        year_data.insert(*yr, data);
     }
     compute_next_holiday_from_data(&year_data, year, month, day)
 }

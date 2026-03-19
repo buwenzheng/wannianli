@@ -54,18 +54,13 @@ export async function getHolidayInfo(date: Date): Promise<HolidayInfo> {
   })
 }
 
-const LUNAR_DAYS = [
-  '初一', '初二', '初三', '初四', '初五', '初六', '初七', '初八', '初九', '初十',
-  '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十',
-  '廿一', '廿二', '廿三', '廿四', '廿五', '廿六', '廿七', '廿八', '廿九', '三十',
-]
-
 /**
  * 格式化农历日期显示（后端数据加载前的 fallback）
+ * 后端数据未就绪时返回空字符串，避免显示不准确的占位农历
  */
-export function formatLunarDisplay(date: Date): string {
-  const dayIndex = (date.getDate() - 1) % 30
-  return LUNAR_DAYS[dayIndex] || '初一'
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function formatLunarDisplay(_date: Date): string {
+  return ''
 }
 
 /**

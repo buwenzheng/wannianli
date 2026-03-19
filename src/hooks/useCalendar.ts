@@ -6,6 +6,7 @@ import { formatLunarDisplay, getCalendarData } from '../utils/lunarUtils'
 interface UseCalendarProps {
   initialDate?: Date
   showLunar?: boolean
+  weekStartsOn?: 0 | 1
 }
 
 interface UseCalendarReturn {
@@ -24,13 +25,14 @@ interface UseCalendarReturn {
 export function useCalendar({
   initialDate = new Date(),
   showLunar = true,
+  weekStartsOn = 0,
 }: UseCalendarProps = {}): UseCalendarReturn {
   const [currentMonth, setCurrentMonth] = useState(initialDate)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [backendData, setBackendData] = useState<Map<string, DayCalendarData>>(new Map())
 
   useEffect(() => {
-    const dates = getCalendarDates(currentMonth)
+    const dates = getCalendarDates(currentMonth, weekStartsOn)
     getCalendarData(dates)
       .then(data => {
         const map = new Map<string, DayCalendarData>()
@@ -38,10 +40,10 @@ export function useCalendar({
         setBackendData(map)
       })
       .catch(err => console.error('Failed to load calendar data:', err))
-  }, [currentMonth])
+  }, [currentMonth, weekStartsOn])
 
   const calendarDates = useMemo(() => {
-    const dates = getCalendarDates(currentMonth)
+    const dates = getCalendarDates(currentMonth, weekStartsOn)
 
     return dates.map((date): CalendarDate => {
       const key = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
@@ -75,7 +77,7 @@ export function useCalendar({
         holidayInfo: data?.holidayInfo,
       }
     })
-  }, [currentMonth, selectedDate, backendData, showLunar])
+  }, [currentMonth, selectedDate, backendData, showLunar, weekStartsOn])
 
   const goToPrevMonth = useCallback((): void => {
     setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
